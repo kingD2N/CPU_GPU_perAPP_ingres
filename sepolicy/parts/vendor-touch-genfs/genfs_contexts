@@ -1,0 +1,3 @@
+# Dipasang bila device tree belum memberi label bump_sample_rate (mis. AOSPA calcite): tanpa
+# label node jatuh ke "sysfs" umum, yang tidak boleh ditulis init. Label sama seperti LineageOS.
+genfscon sysfs /devices/virtual/touch/touch_dev/bump_sample_rate u:object_r:vendor_sysfs_touch:s0

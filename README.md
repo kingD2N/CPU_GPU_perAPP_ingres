@@ -1,82 +1,151 @@
-# CPU_GPU_perAPP_ingres
+# Ingres Parts
 
-Pengaturan **CPU/GPU per Aplikasi** untuk ROM Android 16 dan 17. Setiap aplikasi bisa punya profil sendiri: frekuensi minimum dan maksimum tiap cluster CPU, governor CPU, dan frekuensi GPU. Profil diterapkan otomatis saat aplikasi itu dibuka.
+Aplikasi pengaturan bawaan untuk **POCO F4 GT / Redmi K50 Gaming (ingres)** di ROM berbasis AOSP
+(LineageOS dan turunannya, AOSPA, dll), Android 16 dan 17. Muncul sebagai entri **Ingres Parts**
+di halaman utama Setelan.
 
-Dibuat oleh **kingD2N** untuk POCO F4 GT (ingres, Snapdragon 8 Gen 1).
+Repo ini juga berisi **CPU/GPU per Aplikasi** (IngresPerf), dulu repo `CPU_GPU_perAPP_ingres`.
+Sekarang menjadi bagian dari Ingres Parts dan dibuka dari menu **Fitur lain**.
+
+Dibuat oleh [kingD2N](https://github.com/kingD2N). Diuji di Evolution X (Android 17).
 
 ## Fitur
 
-- Menu **Setelan → Sistem → CPU/GPU per Aplikasi**, tanpa ikon di peluncur.
-- Profil **Default**, diterapkan sekitar 20 detik setelah boot dan saat aplikasi yang dibuka tidak punya profil sendiri.
-- Setiap kolom bisa dibiarkan **Tidak diatur**, artinya nilainya mengikuti sistem (modul atau Kernel Manager) dan tidak ditimpa.
-- Saat keluar dari aplikasi berprofil, nilai sistem sebelumnya dipulihkan.
-- Governor GPU dan thermal tidak disentuh.
+| Fitur | Node | Keterangan |
+|---|---|---|
+| Batas cas: Normal / Optimal 80% / Batas 50–95% | `qcom-battery/night_charging`, `input_suspend` | batas kustom lanjut cas lagi 5% di bawah batas |
+| Bypass charging (eksperimen) | `power_supply/battery/constant_charge_current` | HP memakai daya charger tanpa mengisi baterai; bisa hanya saat main game |
+| Profil thermal: Hemat / Harian / Seimbang / Gaming / Performa | `thermal_message/sconfig` (11 / 0 / 20 / 13 / 10) | Seimbang = bawaan ROM (20), tidak ditulis bila tidak diubah |
+| Mode game: daftar game, thermal khusus game, sentuhan 480 Hz, overlay FPS & suhu | `touch_dev/bump_sample_rate`, `sde-crtc-0/measured_fps` | aktif saat game di daftar terbuka di layar depan |
+| Sentuhan 480 Hz di semua aplikasi | `touch_dev/bump_sample_rate` | pengganti "High touch polling rate" di Setelan |
+| Mode warna Flat | `disp-DSI-0/disp_param` = `6 1` | ditulis ulang saat layar menyala (panel ingres tidak mendukung DC dimming) |
+| Pembersih speaker | speaker bawaan | nada 165 Hz 30 detik, volume dikembalikan sesudahnya |
+| CPU/GPU per Aplikasi | `cpufreq/policy0,4,7`, `kgsl-3d0/devfreq` | profil frekuensi CPU/GPU dan governor per aplikasi (lihat di bawah) |
+| Fitur lain | LED, Dolby | pintasan, hanya yang terpasang |
+
+Bahasa: Indonesia dan Inggris (mengikuti bahasa HP).
+
+## Pasang
+
+1. Tambahkan ke local manifest:
+
+   ```xml
+   <project path="packages/apps/IngresParts" name="kingD2N/Ingres_Parts" remote="github" revision="main" />
+   ```
+
+   (`remote="github"` = `https://github.com`; sesuaikan dengan nama remote di manifest kamu.)
+
+2. `device.mk` (`INGRES_PARTS` diset **sebelum** inherit sm8450-common, lihat langkah 4):
+
+   ```make
+   INGRES_PARTS := true
+   $(call inherit-product, device/xiaomi/sm8450-common/common.mk)
+   ...
+   $(call inherit-product, packages/apps/IngresParts/ingres_parts.mk)
+   ```
+
+3. `BoardConfig.mk` (paling bawah):
+
+   ```make
+   -include packages/apps/IngresParts/BoardConfigParts.mk
+   ```
+
+4. Disarankan, di `device/xiaomi/sm8450-common/common.mk` (LineageOS): sakelar "High touch polling rate"
+   di Setelan dihilangkan, supaya sentuhan hanya diatur dari Ingres Parts dan tidak saling menimpa.
+
+   ```make
+   ifneq ($(INGRES_PARTS),true)
+   $(call soong_config_set, XIAOMI_TOUCH, HIGH_TOUCH_POLLING_PATH, /sys/devices/virtual/touch/touch_dev/bump_sample_rate)
+   endif
+   ```
+
+5. Build ROM seperti biasa.
+
+Tanpa CPU/GPU per Aplikasi: isi `INGRES_PARTS_PERF := false` di `device.mk` **dan** `BoardConfig.mk`
+sebelum include. Path lain: isi `INGRES_PARTS_PATH := <path>` di keduanya.
+
+### Pembaruan dari CPU_GPU_perAPP_ingres
+
+- Path di manifest jadi `packages/apps/IngresParts` (repo lama otomatis diarahkan GitHub ke nama baru).
+- `ingres_perf.mk` → `ingres_parts.mk`, `BoardConfigPerf.mk` → `BoardConfigParts.mk`, `INGRES_PERF_PATH` → `INGRES_PARTS_PATH`.
+- Profil CPU/GPU yang sudah tersimpan di HP tetap terpakai (nama paket `org.ingres.perf` tidak berubah).
+- Entri Setelan > Sistem > CPU/GPU per Aplikasi disembunyikan selama Ingres Parts terpasang; bukanya dari Ingres Parts > Fitur lain.
 
 ## Cara kerja
 
-App `IngresPerf` tidak menulis sysfs sendiri. App mengisi properti `sys.ingres.perf.*` lalu menaikkan `sys.ingres.perf.apply`. File `init.ingres_perf.rc` yang kemudian menulis node sysfs dengan urutan yang aman, karena kernel menolak min > max:
+- App `IngresParts` (`org.ingres.parts`) dan `IngresPerf` (`org.ingres.perf`) bersertifikat platform,
+  di `system_ext/priv-app`. Keduanya tidak menulis sysfs sendiri: app mengisi properti
+  `sys.ingres.parts.*` / `sys.ingres.perf.*`, lalu `init` (`init/*.rc`) yang menulis node.
+- Sampling sentuh (driver Goodix Berlin): `bump_sample_rate` 1 = 480 Hz, 0 = 240 Hz. Node ini tidak
+  bisa dibaca, jadi nilainya ditentukan penuh dari setelan Ingres Parts.
+- Bypass: arus cas (FCC) diisi 0. Saat selesai, FCC dilepas dengan `-1`. Driver `qti_battery_charger`
+  meneruskannya ke ADSP sebagai `UINT_MAX` (tanpa batas), jadi pengisian berikutnya tidak terbatasi.
+  Menulis angka arus biasa justru menjadi batas tetap sampai reboot.
+- Mode game memakai aplikasi yang **difokuskan**: jendela mengambang atau split screen di atas game
+  dianggap keluar dari game.
 
-1. Governor CPU
-2. Batas bawah (floor) min
-3. Max target
-4. Min target
+### CPU/GPU per Aplikasi
 
-## Syarat perangkat
+- Profil per aplikasi: frekuensi min/max tiap cluster CPU (little/big/prime), governor CPU, dan min/max GPU.
+  Profil **Default** diterapkan ~20 detik setelah boot dan saat aplikasi di depan tidak punya profil.
+- Kolom bisa dibiarkan **Tidak diatur** (mengikuti sistem). Nilai sebelumnya dipulihkan saat keluar dari aplikasi berprofil.
+- `init.ingres_perf.rc` menulis dengan urutan aman (kernel menolak min > max): governor, lantai min, max, min.
+- Node: CPU `cpufreq/policy0` (little), `policy4` (big), `policy7` (prime), GPU `/sys/class/kgsl/kgsl-3d0/devfreq/`.
+  Cocok untuk SM8450/SM8475; untuk SoC lain sesuaikan `perf/app/java/org/ingres/perf/logic/PerfNodes.java`
+  dan `init/init.ingres_perf.rc`.
 
-Node yang dipakai (lihat `app/java/org/ingres/perf/logic/PerfNodes.java` dan `init/init.ingres_perf.rc`):
+## SELinux
 
-| Bagian | Node |
-|---|---|
-| CPU little | `/sys/devices/system/cpu/cpufreq/policy0/` |
-| CPU big | `/sys/devices/system/cpu/cpufreq/policy4/` |
-| CPU prime | `/sys/devices/system/cpu/cpufreq/policy7/` |
-| GPU (Adreno) | `/sys/class/kgsl/kgsl-3d0/devfreq/` |
+`BoardConfigParts.mk` menyesuaikan diri dengan source ROM:
 
-Susunan cluster 0/4/7 cocok untuk SM8450 (8 Gen 1) dan SM8475 (8+ Gen 1). Untuk SoC lain, sesuaikan nomor `policy` di kedua file itu.
+| Folder | Dipasang bila | Isi |
+|---|---|---|
+| `sepolicy/parts/private` | selalu | properti `sys.ingres.parts.*`, init menulis `sysfs_thermal` |
+| `sepolicy/parts/private-a17`, `sepolicy/perf/private-a17` | Android 17 | properti untuk `platform_app_36` |
+| `sepolicy/parts/vendor` (+`-a17`) | tipe `vendor_sysfs_battery_supply` & `vendor_sysfs_graphics` ada | baterai, overlay FPS, `disp_param` di AOSPA |
+| `sepolicy/parts/vendor-touch` | tipe `vendor_sysfs_touch` ada | sentuhan 480/240 Hz |
+| `sepolicy/parts/vendor-touch-genfs` | `bump_sample_rate` belum diberi label di `device/xiaomi` (mis. AOSPA) | label `vendor_sysfs_touch` |
+| `sepolicy/parts/vendor-displayfeature` | tipe `vendor_sysfs_displayfeature` ada (LineageOS) | mode Flat |
+| `sepolicy/perf/private` | CPU/GPU per Aplikasi aktif | properti `sys.ingres.perf.*`, init menulis cpufreq |
+| `sepolicy/perf/vendor` (+`-a17`) | tipe `vendor_sysfs_kgsl` ada | GPU |
 
-## Cara pakai
+Android 17 dikenali dari `platform_app_36` di `system/sepolicy`. Bila sebuah tipe tidak ada, build tetap
+jalan dan muncul peringatan `IngresParts: ...` di log.
 
-### 1. Local manifest
+## Integrasi dengan aplikasi lain (opsional)
 
-```xml
-<project path="packages/apps/IngresPerf" name="kingD2N/CPU_GPU_perAPP_ingres" remote="github" revision="main" />
+Menu **Fitur lain** membuka aplikasi ini bila terpasang:
+
+- LED: `org.lineageos.leds/.MainActivity`
+- CPU/GPU per Aplikasi: `org.ingres.perf/.ui.PerfActivity` (repo ini)
+- Dolby: `org.lunaris.dolby/.ui.DolbyActivity`
+
+Bila aplikasi itu memindahkan ikon peluncur / entri Setelannya ke activity-alias bernama
+`LauncherEntry` / `SettingsEntry` (lihat `parts/app/kotlin/org/ingres/parts/EntryPoints.kt`), Ingres Parts
+menyembunyikan entri ganda itu supaya semua fitur ada di satu menu. IngresPerf di repo ini sudah memakai alias.
+
+## Hindari bentrok
+
+- Jangan dipasang bersamaan dengan paket `vendor/ingres/addons` yang `INGRES_ADDONS_PARTS` / `INGRES_ADDONS_PERF`-nya menyala; isinya sama.
+- Modul KernelSU/Magisk yang menulis `sconfig` (mis. DThermal) menimpa profil thermal; yang terus menulis `scaling_max_freq` menimpa profil CPU. Matikan salah satunya.
+- AOSPA: XiaomiParts punya "profil thermal per aplikasi" (mati bawaan). Biarkan mati.
+- Bila langkah 4 dilewati, sakelar "High touch polling rate" di Setelan ikut mengatur node sentuhan yang sama.
+
+## Cek di HP (terminal root)
+
+```sh
+getprop | grep -e ingres.parts -e ingres.perf
+cat /sys/devices/virtual/thermal/thermal_message/sconfig
+cat /sys/class/qcom-battery/night_charging /sys/class/qcom-battery/input_suspend
+dmesg | grep "report rate switch" | tail -2      # 480HZ / 240HZ
+dmesg | grep avc | grep -e ingres -e init | tail
 ```
 
-Ganti `remote` dengan nama remote GitHub di manifest ROM-mu (misal `github` atau `gh`).
+## Tes logika (di PC)
 
-### 2. `device.mk`
-
-```make
-$(call inherit-product, packages/apps/IngresPerf/ingres_perf.mk)
-```
-
-### 3. `BoardConfig.mk` (paling bawah)
-
-```make
--include packages/apps/IngresPerf/BoardConfigPerf.mk
-```
-
-Sepolicy dipasang otomatis sesuai ROM:
-
-- **Android 17** dikenali dari `platform_app_36` di `system/sepolicy`. App platform dengan target SDK < 37 berjalan sebagai `platform_app_36`, jadi aturan tambahan di `sepolicy/*-a17` ikut dipasang.
-- **Aturan GPU** (`sepolicy/vendor`) hanya dipasang bila tipe `vendor_sysfs_kgsl` ada di source device/hardware. Aturan dengan tipe yang tidak ada akan merusak build sepolicy vendor.
-
-Kalau path-nya bukan `packages/apps/IngresPerf`, isi `INGRES_PERF_PATH := <path>` sebelum kedua baris di atas.
-
-## Catatan
-
-- App ditandatangani `platform` dan dipasang di `system_ext` sebagai priv-app.
-- Jangan dipasang bersamaan dengan paket `vendor/ingres/addons` yang `INGRES_ADDONS_PERF`-nya menyala, karena isinya sama. Matikan salah satunya.
-- Modul KSU yang terus-menerus menulis `scaling_max_freq` akan menimpa profil dari app ini.
-
-## Tes logika
-
-Logika profil (`app/java`) tidak bergantung pada Android dan bisa dites di PC:
-
-```bash
-mkdir -p /tmp/perf-test
-javac -d /tmp/perf-test $(find app/java app/test -name "*.java")
-java -cp /tmp/perf-test org.ingres.perf.logic.HostTests
+```sh
+javac -d /tmp/parts $(find parts/app/java parts/app/test -name "*.java") && java -cp /tmp/parts org.ingres.parts.logic.HostTests
+javac -d /tmp/perf $(find perf/app/java perf/app/test -name "*.java") && java -cp /tmp/perf org.ingres.perf.logic.HostTests
 ```
 
 ## Lisensi

@@ -1,4 +1,4 @@
 # Android 17: app IngresPerf (sertifikat platform, target SDK < 37) berjalan sebagai
 # platform_app_36, bukan platform_app. Hanya dipasang di Android 17
-# (lihat INGRES_PERF_A17 di BoardConfigPerf.mk).
+# (lihat INGRES_PARTS_A17 di BoardConfigParts.mk).
 set_prop(platform_app_36, ingres_perf_prop)

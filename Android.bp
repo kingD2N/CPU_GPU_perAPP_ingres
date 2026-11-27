@@ -2,12 +2,23 @@
 // SPDX-FileCopyrightText: 2026 kingD2N
 // SPDX-License-Identifier: Apache-2.0
 //
+// Ingres Parts: app pengaturan ingres (parts/app) dan CPU/GPU per Aplikasi (perf/app).
+//
 
 soong_namespace {
 }
 
-// Init rc kontrol CPU/GPU per aplikasi: menulis sysfs saat app IngresPerf
-// mengubah sys.ingres.perf.apply. Diinstal ke /system_ext/etc/init.
+// Init rc Ingres Parts: menulis sysfs baterai, thermal, sentuh, dan layar saat app
+// IngresParts mengubah properti sys.ingres.parts.*. Diinstal ke /system_ext/etc/init.
+prebuilt_etc {
+    name: "init.ingres_parts.rc",
+    src: "init/init.ingres_parts.rc",
+    system_ext_specific: true,
+    sub_dir: "init",
+}
+
+// Init rc CPU/GPU per Aplikasi: menulis sysfs saat app IngresPerf mengubah
+// sys.ingres.perf.apply. Diinstal ke /system_ext/etc/init.
 prebuilt_etc {
     name: "init.ingres_perf.rc",
     src: "init/init.ingres_perf.rc",
