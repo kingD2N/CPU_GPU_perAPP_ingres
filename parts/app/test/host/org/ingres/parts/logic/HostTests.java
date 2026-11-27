@@ -22,6 +22,7 @@ public class HostTests {
         readings();
         games();
         tone();
+        battery();
         System.out.println("ALL PASS (" + pass + ")");
     }
 
@@ -114,5 +115,41 @@ public class HostTests {
             threw = true;
         }
         check(threw, "nada: parameter salah ditolak");
+    }
+    private static void battery() {
+        int U = BatteryInfo.UNKNOWN;
+        check(BatteryInfo.parseInt(" 4700000\n") == 4700000 && BatteryInfo.parseInt("x") == U
+                && BatteryInfo.parseInt(null) == U && BatteryInfo.parseInt("") == U, "baterai: urai angka");
+        check(BatteryInfo.toMah(4700000) == 4700 && BatteryInfo.toMah(4700) == 4700 && BatteryInfo.toMah(0) == U
+                && BatteryInfo.toMah(U) == U, "baterai: uAh ke mAh");
+        // SOH fuel gauge diutamakan, lalu full/design, dibatasi 100.
+        check(BatteryInfo.healthPercent(92, 4000000, 4700000) == 92, "baterai: pakai fg1_soh");
+        check(BatteryInfo.healthPercent(U, 4512000, 4700000) == 96, "baterai: full/design");
+        check(BatteryInfo.healthPercent(0, 4512000, 4700000) == 96, "baterai: fg1_soh 0 diabaikan");
+        check(BatteryInfo.healthPercent(105, U, U) == 100, "baterai: fg1_soh dibatasi 100");
+        check(BatteryInfo.healthPercent(U, 4800000, 4700000) == 100, "baterai: full>design dibatasi 100");
+        check(BatteryInfo.healthPercent(U, U, 4700000) == U && BatteryInfo.healthPercent(250, U, U) == U, "baterai: SOH tak diketahui");
+        check(BatteryInfo.cycles(120, 5, 7) == 120 && BatteryInfo.cycles(U, 5, 7) == 5 && BatteryInfo.cycles(-1, U, 7) == 7
+                && BatteryInfo.cycles(U, U, U) == U, "baterai: siklus");
+        // Tanda arus dipelajari saat charger tercabut.
+        check(BatteryInfo.learnDischargeSign(-800000, false) == -1, "arus: belajar tanda negatif");
+        check(BatteryInfo.learnDischargeSign(800000, false) == 1, "arus: belajar tanda positif");
+        check(BatteryInfo.learnDischargeSign(800000, true) == 0 && BatteryInfo.learnDischargeSign(20000, false) == 0
+                && BatteryInfo.learnDischargeSign(U, false) == 0, "arus: tidak belajar");
+        check(BatteryInfo.signedMa(-1500000, 0) == -1500 && BatteryInfo.signedMa(2000000, 0) == 2000, "arus: konvensi Android");
+        check(BatteryInfo.signedMa(1500000, 1) == -1500 && BatteryInfo.signedMa(-2000000, 1) == 2000, "arus: kernel terbalik");
+        check(BatteryInfo.signedMa(U, 1) == U, "arus: tak diketahui");
+        check(Math.abs(BatteryInfo.watts(4000, -2500) - 10f) < 1e-4 && Float.isNaN(BatteryInfo.watts(U, 100)), "daya");
+        check(BatteryInfo.chargerKind(false, "PD") == BatteryInfo.KIND_NONE, "charger: tidak tersambung");
+        check(BatteryInfo.chargerKind(true, "PD_PPS\n") == BatteryInfo.KIND_PPS && BatteryInfo.chargerKind(true, "pd") == BatteryInfo.KIND_PD
+                && BatteryInfo.chargerKind(true, "HVDCP_3P5") == BatteryInfo.KIND_QC && BatteryInfo.chargerKind(true, "DCP") == BatteryInfo.KIND_STANDARD
+                && BatteryInfo.chargerKind(true, "SDP") == BatteryInfo.KIND_USB && BatteryInfo.chargerKind(true, "USB_FLOAT") == BatteryInfo.KIND_UNKNOWN
+                && BatteryInfo.chargerKind(true, null) == BatteryInfo.KIND_UNKNOWN, "charger: jenis");
+        check(BatteryInfo.chargerWatts(true, 120) == 120 && BatteryInfo.chargerWatts(false, 120) == U
+                && BatteryInfo.chargerWatts(true, 0) == U && BatteryInfo.chargerWatts(true, 9999) == U, "charger: watt");
+        check(BatteryInfo.formatVolts(4321).equals("4.32 V") && BatteryInfo.formatVolts(U).equals("-"), "format volt");
+        check(BatteryInfo.formatWatts(12.34f).equals("12.3 W") && BatteryInfo.formatWatts(Float.NaN).equals("-"), "format watt");
+        check(BatteryInfo.formatTempC(BatteryInfo.tempC(364)).equals("36.4°C") && BatteryInfo.formatTempC(BatteryInfo.tempC(U)).equals("-"), "format suhu");
+        check(BatteryInfo.minutesLeft(90_000) == 2 && BatteryInfo.minutesLeft(1) == 1 && BatteryInfo.minutesLeft(-1) == U, "sisa waktu cas");
     }
 }

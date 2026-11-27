@@ -20,6 +20,8 @@ import org.ingres.parts.logic.ThermalProfile
 class PartsController(private val ctx: Context) {
     val prefs = PartsPrefs(ctx)
     private val overlay = FpsOverlay(ctx)
+    /** Info baterai untuk halaman Ingres Parts (dibaca di luar thread utama). */
+    val battery = BatteryReader(ctx, prefs)
 
     // Masukan
     var batteryLevel = -1
@@ -60,6 +62,7 @@ class PartsController(private val ctx: Context) {
     }
 
     fun onBattery(level: Int, isPlugged: Boolean) {
+        battery.learnIfNeeded(isPlugged)
         if (level == batteryLevel && isPlugged == plugged) return
         batteryLevel = level
         plugged = isPlugged

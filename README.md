@@ -13,6 +13,7 @@ Dibuat oleh [kingD2N](https://github.com/kingD2N). Diuji di Evolution X (Android
 
 | Fitur | Node | Keterangan |
 |---|---|---|
+| Info baterai: kesehatan, kapasitas, siklus, suhu, tegangan, arus, daya, charger | `qcom-battery/fg1_soh`, `fg1_cycle`, `real_type`, `power_max`, `power_supply/battery` | diperbarui tiap 2 detik selama halaman terbuka; arah arus dipelajari saat charger dicabut |
 | Batas cas: Normal / Optimal 80% / Batas 50–95% | `qcom-battery/night_charging`, `input_suspend` | batas kustom lanjut cas lagi 5% di bawah batas |
 | Bypass charging (eksperimen) | `power_supply/battery/constant_charge_current` | HP memakai daya charger tanpa mengisi baterai; bisa hanya saat main game |
 | Profil thermal: Hemat / Harian / Seimbang / Gaming / Performa | `thermal_message/sconfig` (11 / 0 / 20 / 13 / 10) | Seimbang = bawaan ROM (20), tidak ditulis bila tidak diubah |

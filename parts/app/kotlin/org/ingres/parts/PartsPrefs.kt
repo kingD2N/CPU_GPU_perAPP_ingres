@@ -81,6 +81,14 @@ class PartsPrefs(context: Context) {
             prefs.edit().putInt(K_FCC_RESTORE, v).commit()
         }
 
+    /**
+     * Tanda current_now saat baterai terpakai (-1 atau 1), 0 = belum diketahui. Dipelajari saat
+     * charger tercabut, karena kernel tidak selalu memakai konvensi Android.
+     */
+    var dischargeSign: Int
+        get() = prefs.getInt(K_DISCHARGE_SIGN, 0).coerceIn(-1, 1)
+        set(v) = prefs.edit().putInt(K_DISCHARGE_SIGN, v.coerceIn(-1, 1)).apply()
+
     private companion object {
         const val K_CHARGE_MODE = "charge_mode"
         const val K_CHARGE_LIMIT = "charge_limit"
@@ -94,5 +102,6 @@ class PartsPrefs(context: Context) {
         const val K_TOUCH_ALWAYS = "touch_always"
         const val K_FLAT = "flat_mode"
         const val K_FCC_RESTORE = "fcc_restore"
+        const val K_DISCHARGE_SIGN = "discharge_sign"
     }
 }

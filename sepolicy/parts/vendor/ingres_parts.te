@@ -7,6 +7,10 @@
 #     -> vendor_sysfs_battery_supply
 #   mi_display/disp_feature/disp-DSI-0/disp_param -> vendor_sysfs_graphics di AOSPA
 #   sde-crtc-0/measured_fps (dibaca app untuk overlay FPS) -> vendor_sysfs_graphics
+#   info baterai (dibaca app): power_supply/battery (charge_full, cycle_count, ...) dan
+#     qcom-battery (fg1_soh, real_type, power_max) -> vendor_sysfs_battery_supply. App membaca
+#     path asli di /sys/devices, bukan /sys/class/power_supply (sysfs_batteryinfo, dilarang
+#     untuk coredomain).
 allow init vendor_sysfs_battery_supply:dir r_dir_perms;
 allow init vendor_sysfs_battery_supply:file w_file_perms;
 allow init vendor_sysfs_battery_supply:lnk_file r_file_perms;
@@ -16,3 +20,6 @@ allow init vendor_sysfs_graphics:file w_file_perms;
 allow platform_app vendor_sysfs_graphics:dir r_dir_perms;
 allow platform_app vendor_sysfs_graphics:file r_file_perms;
 allow platform_app vendor_sysfs_graphics:lnk_file r_file_perms;
+
+allow platform_app vendor_sysfs_battery_supply:dir r_dir_perms;
+allow platform_app vendor_sysfs_battery_supply:file r_file_perms;

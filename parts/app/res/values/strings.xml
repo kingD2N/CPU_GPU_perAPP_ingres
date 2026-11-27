@@ -8,6 +8,36 @@
     <string name="settings_summary">Battery, thermal, game mode, display</string>
     <string name="not_ready">Ingres Parts service is not running. Restart the device and try again.</string>
 
+    <string name="section_battery_info">Battery info</string>
+    <string name="info_health">Health</string>
+    <string name="info_capacity">Full capacity</string>
+    <string name="info_cycles">Charge cycles</string>
+    <string name="info_temp">Temperature</string>
+    <string name="info_voltage">Voltage</string>
+    <string name="info_current">Current</string>
+    <string name="info_power">Power</string>
+    <string name="info_charger">Charger</string>
+    <string name="info_time_full">Full in</string>
+    <string name="minutes_approx">~%1$d min</string>
+    <string name="health_good">Good</string>
+    <string name="health_overheat">Overheating</string>
+    <string name="health_cold">Too cold</string>
+    <string name="health_dead">Dead</string>
+    <string name="health_over_voltage">Over voltage</string>
+    <string name="health_failure">Failure</string>
+    <string name="health_unknown">Unknown</string>
+    <string name="flow_in">charging</string>
+    <string name="flow_out">in use</string>
+    <string name="flow_idle">idle</string>
+    <string name="charger_none">Not plugged in</string>
+    <string name="charger_usb">USB port</string>
+    <string name="charger_standard">Standard charger</string>
+    <string name="charger_qc">Quick Charge</string>
+    <string name="charger_pd">USB PD</string>
+    <string name="charger_pps">USB PD PPS</string>
+    <string name="charger_unknown">Plugged in</string>
+    <string name="charger_with_watts">%1$s · up to %2$d W</string>
+
     <string name="section_battery">Battery &amp; charging</string>
     <string name="charge_normal">Normal</string>
     <string name="charge_normal_desc">Charge to 100%</string>

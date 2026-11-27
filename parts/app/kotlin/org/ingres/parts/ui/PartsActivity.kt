@@ -5,6 +5,7 @@
 
 package org.ingres.parts.ui
 
+import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -58,12 +59,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import org.ingres.parts.BatteryReader
 import org.ingres.parts.EntryPoints
 import org.ingres.parts.PartsApplication
 import org.ingres.parts.PartsController
 import org.ingres.parts.R
 import org.ingres.parts.SpeakerCleaner
+import org.ingres.parts.logic.BatteryInfo
 import org.ingres.parts.logic.ChargePolicy
 import org.ingres.parts.logic.ThermalProfile
 
@@ -137,6 +142,22 @@ private fun MainScreen(
             statusTick++
         }
     }
+    // Info baterai: node qcom-battery dibaca lewat ADSP, jadi di luar thread utama.
+    var battInfo by remember { mutableStateOf<BatteryReader.Snapshot?>(null) }
+    LaunchedEffect(controller) {
+        while (true) {
+            battInfo =
+                withContext(Dispatchers.IO) {
+                    try {
+                        controller.battery.read()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Gagal membaca info baterai", e)
+                        null
+                    }
+                }
+            delay(2000)
+        }
+    }
     DisposableEffect(speaker) {
         speaker.onStateChanged = { cleaning = it }
         onDispose {
@@ -156,6 +177,12 @@ private fun MainScreen(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            battInfo?.let { info ->
+                item {
+                    Section(stringResource(R.string.section_battery_info)) { BatteryInfoRows(info) }
+                }
+            }
+
             item {
                 Section(stringResource(R.string.section_battery)) {
                     BatteryStatus(controller, statusTick)
@@ -303,6 +330,78 @@ private fun BatteryStatus(controller: PartsController, @Suppress("UNUSED_PARAMET
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
     )
+}
+
+@Composable
+private fun BatteryInfoRows(info: BatteryReader.Snapshot) {
+    val u = BatteryInfo.UNKNOWN
+    val condition =
+        stringResource(
+            when (info.healthCode) {
+                BatteryManager.BATTERY_HEALTH_GOOD -> R.string.health_good
+                BatteryManager.BATTERY_HEALTH_OVERHEAT -> R.string.health_overheat
+                BatteryManager.BATTERY_HEALTH_COLD -> R.string.health_cold
+                BatteryManager.BATTERY_HEALTH_DEAD -> R.string.health_dead
+                BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> R.string.health_over_voltage
+                BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> R.string.health_failure
+                else -> R.string.health_unknown
+            },
+        )
+    val health = if (info.healthPercent != u) "${info.healthPercent}% · $condition" else condition
+    InfoRow(stringResource(R.string.info_health), health)
+    if (info.fullMah != u) {
+        val cap = if (info.designMah != u) "${info.fullMah} / ${info.designMah} mAh" else "${info.fullMah} mAh"
+        InfoRow(stringResource(R.string.info_capacity), cap)
+    }
+    if (info.cycles != u) InfoRow(stringResource(R.string.info_cycles), info.cycles.toString())
+    InfoRow(stringResource(R.string.info_temp), BatteryInfo.formatTempC(info.tempC))
+    InfoRow(stringResource(R.string.info_voltage), BatteryInfo.formatVolts(info.voltageMv))
+    if (info.currentMa != u) {
+        val dir =
+            stringResource(
+                when {
+                    Math.abs(info.currentMa) < BatteryInfo.IDLE_MA -> R.string.flow_idle
+                    info.currentMa > 0 -> R.string.flow_in
+                    else -> R.string.flow_out
+                },
+            )
+        val sign = if (info.currentMa > 0) "+" else ""
+        InfoRow(stringResource(R.string.info_current), "$sign${info.currentMa} mA · $dir")
+        InfoRow(stringResource(R.string.info_power), BatteryInfo.formatWatts(info.watts))
+    }
+    val kind =
+        when (info.chargerKind) {
+            BatteryInfo.KIND_NONE -> R.string.charger_none
+            BatteryInfo.KIND_USB -> R.string.charger_usb
+            BatteryInfo.KIND_STANDARD -> R.string.charger_standard
+            BatteryInfo.KIND_QC -> R.string.charger_qc
+            BatteryInfo.KIND_PD -> R.string.charger_pd
+            BatteryInfo.KIND_PPS -> R.string.charger_pps
+            else -> R.string.charger_unknown
+        }
+    val charger =
+        if (info.chargerWatts != u) stringResource(R.string.charger_with_watts, stringResource(kind), info.chargerWatts)
+        else stringResource(kind)
+    InfoRow(stringResource(R.string.info_charger), charger)
+    if (info.minutesToFull != u) {
+        InfoRow(stringResource(R.string.info_time_full), stringResource(R.string.minutes_approx, info.minutesToFull))
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+    }
 }
 
 @Composable

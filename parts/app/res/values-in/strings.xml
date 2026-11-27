@@ -7,6 +7,36 @@
     <string name="settings_summary">Baterai, thermal, mode game, layar</string>
     <string name="not_ready">Layanan Ingres Parts tidak berjalan. Mulai ulang perangkat lalu coba lagi.</string>
 
+    <string name="section_battery_info">Info baterai</string>
+    <string name="info_health">Kesehatan</string>
+    <string name="info_capacity">Kapasitas penuh</string>
+    <string name="info_cycles">Siklus cas</string>
+    <string name="info_temp">Suhu</string>
+    <string name="info_voltage">Tegangan</string>
+    <string name="info_current">Arus</string>
+    <string name="info_power">Daya</string>
+    <string name="info_charger">Charger</string>
+    <string name="info_time_full">Penuh dalam</string>
+    <string name="minutes_approx">~%1$d menit</string>
+    <string name="health_good">Baik</string>
+    <string name="health_overheat">Terlalu panas</string>
+    <string name="health_cold">Terlalu dingin</string>
+    <string name="health_dead">Rusak</string>
+    <string name="health_over_voltage">Tegangan berlebih</string>
+    <string name="health_failure">Bermasalah</string>
+    <string name="health_unknown">Tidak diketahui</string>
+    <string name="flow_in">mengisi</string>
+    <string name="flow_out">terpakai</string>
+    <string name="flow_idle">diam</string>
+    <string name="charger_none">Tidak tersambung</string>
+    <string name="charger_usb">Port USB</string>
+    <string name="charger_standard">Charger biasa</string>
+    <string name="charger_qc">Quick Charge</string>
+    <string name="charger_pd">USB PD</string>
+    <string name="charger_pps">USB PD PPS</string>
+    <string name="charger_unknown">Tersambung</string>
+    <string name="charger_with_watts">%1$s · maks %2$d W</string>
+
     <string name="section_battery">Baterai &amp; pengisian</string>
     <string name="charge_normal">Normal</string>
     <string name="charge_normal_desc">Cas sampai 100%</string>
