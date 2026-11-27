@@ -41,7 +41,8 @@ class PartsApplication : Application() {
                 val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
                 val pct = if (level >= 0 && scale > 0) level * 100 / scale else -1
                 val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
-                parts.onBattery(pct, plugged)
+                val t = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE)
+                parts.onBattery(pct, plugged, if (t == Int.MIN_VALUE) Float.NaN else t / 10f)
             }
         }
 

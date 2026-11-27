@@ -16,6 +16,7 @@ Dibuat oleh [kingD2N](https://github.com/kingD2N). Diuji di Evolution X (Android
 | Info baterai: kesehatan, kapasitas, siklus, suhu, tegangan, arus, daya, charger | `qcom-battery/fg1_soh`, `fg1_cycle`, `real_type`, `power_max`, `power_supply/battery` | diperbarui tiap 2 detik selama halaman terbuka; arah arus dipelajari saat charger dicabut |
 | Batas cas: Normal / Optimal 80% / Batas 50–95% | `qcom-battery/night_charging`, `input_suspend` | batas kustom lanjut cas lagi 5% di bawah batas |
 | Bypass charging (eksperimen) | `power_supply/battery/constant_charge_current` | HP memakai daya charger tanpa mengisi baterai; bisa hanya saat main game |
+| Cas dingin | `power_supply/battery/constant_charge_current` | arus cas dibatasi 3 A saat baterai mencapai batas suhu (36–45°C, bawaan 40), 1,5 A di batas+4°C; dilepas (`-1`) di batas−2°C atau saat charger dicabut |
 | Profil thermal: Hemat / Harian / Seimbang / Gaming / Performa | `thermal_message/sconfig` (11 / 0 / 20 / 13 / 10) | Seimbang = bawaan ROM (20), tidak ditulis bila tidak diubah |
 | Mode game: daftar game, thermal khusus game, sentuhan 480 Hz, overlay FPS & suhu | `touch_dev/bump_sample_rate`, `sde-crtc-0/measured_fps` | aktif saat game di daftar terbuka di layar depan |
 | Sentuhan 480 Hz di semua aplikasi | `touch_dev/bump_sample_rate` | pengganti "High touch polling rate" di Setelan |

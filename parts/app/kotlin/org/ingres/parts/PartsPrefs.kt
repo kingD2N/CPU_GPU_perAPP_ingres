@@ -8,6 +8,7 @@ package org.ingres.parts
 import android.content.Context
 import android.content.SharedPreferences
 import org.ingres.parts.logic.ChargePolicy
+import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.GameList
 import org.ingres.parts.logic.ThermalProfile
 
@@ -34,6 +35,16 @@ class PartsPrefs(context: Context) {
     var bypassGameOnly: Boolean
         get() = prefs.getBoolean(K_BYPASS_GAME_ONLY, true)
         set(v) = prefs.edit().putBoolean(K_BYPASS_GAME_ONLY, v).apply()
+
+    /** Cas dingin: arus cas diturunkan saat baterai panas. */
+    var coolEnabled: Boolean
+        get() = prefs.getBoolean(K_COOL, false)
+        set(v) = prefs.edit().putBoolean(K_COOL, v).apply()
+
+    /** Suhu baterai (derajat C) mulai cas dingin. */
+    var coolTemp: Int
+        get() = CoolCharge.clampTemp(prefs.getInt(K_COOL_TEMP, CoolCharge.DEFAULT_TEMP))
+        set(v) = prefs.edit().putInt(K_COOL_TEMP, CoolCharge.clampTemp(v)).apply()
 
     var thermalBase: String
         get() = ThermalProfile.fromKey(prefs.getString(K_THERMAL_BASE, null)).key
@@ -72,8 +83,8 @@ class PartsPrefs(context: Context) {
         set(v) = prefs.edit().putBoolean(K_FLAT, v).apply()
 
     /**
-     * >0 selama bypass menahan arus cas (FCC 0) dan belum dilepas: dipakai untuk melepas batas
-     * arus setelah app atau HP mulai ulang. (Versi lama menyimpan angka arus di sini.)
+     * >0 selama arus cas (FCC) dibatasi (bypass atau cas dingin) dan belum dilepas: dipakai untuk
+     * melepas batas arus setelah app atau HP mulai ulang. (Versi lama menyimpan angka arus di sini.)
      */
     var pendingFccRestore: Int
         get() = prefs.getInt(K_FCC_RESTORE, 0)
@@ -94,6 +105,8 @@ class PartsPrefs(context: Context) {
         const val K_CHARGE_LIMIT = "charge_limit"
         const val K_BYPASS = "bypass_enabled"
         const val K_BYPASS_GAME_ONLY = "bypass_game_only"
+        const val K_COOL = "cool_charge"
+        const val K_COOL_TEMP = "cool_charge_temp"
         const val K_THERMAL_BASE = "thermal_base"
         const val K_THERMAL_GAME = "thermal_game"
         const val K_GAMES = "games"

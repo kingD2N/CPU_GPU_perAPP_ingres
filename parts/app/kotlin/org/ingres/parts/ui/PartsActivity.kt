@@ -70,6 +70,7 @@ import org.ingres.parts.R
 import org.ingres.parts.SpeakerCleaner
 import org.ingres.parts.logic.BatteryInfo
 import org.ingres.parts.logic.ChargePolicy
+import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.ThermalProfile
 
 /** Halaman Ingres Parts, dibuka dari halaman utama Setelan. */
@@ -125,6 +126,8 @@ private fun MainScreen(
     var chargeLimit by remember { mutableIntStateOf(prefs.chargeLimit) }
     var bypass by remember { mutableStateOf(prefs.bypassEnabled) }
     var bypassGameOnly by remember { mutableStateOf(prefs.bypassGameOnly) }
+    var cool by remember { mutableStateOf(prefs.coolEnabled) }
+    var coolTemp by remember { mutableIntStateOf(prefs.coolTemp) }
     var thermalBase by remember { mutableStateOf(prefs.thermalBase) }
     var thermalGame by remember { mutableStateOf(prefs.thermalGame) }
     var touch by remember { mutableStateOf(prefs.gameTouch) }
@@ -218,6 +221,28 @@ private fun MainScreen(
                         SwitchRow(stringResource(R.string.bypass_game_only), null, bypassGameOnly) {
                             bypassGameOnly = it; prefs.bypassGameOnly = it; applied()
                         }
+                    }
+                    SwitchRow(
+                        stringResource(R.string.cool_title),
+                        stringResource(R.string.cool_desc, coolTemp, coolTemp + CoolCharge.VERY_HOT_STEP),
+                        cool,
+                    ) {
+                        cool = it; prefs.coolEnabled = it; applied()
+                    }
+                    if (cool) {
+                        Text(
+                            stringResource(R.string.cool_temp, coolTemp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                        Slider(
+                            value = coolTemp.toFloat(),
+                            onValueChange = { coolTemp = Math.round(it) },
+                            onValueChangeFinished = { prefs.coolTemp = coolTemp; applied() },
+                            valueRange = CoolCharge.MIN_TEMP.toFloat()..CoolCharge.MAX_TEMP.toFloat(),
+                            steps = CoolCharge.MAX_TEMP - CoolCharge.MIN_TEMP - 1,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
                     }
                 }
             }
@@ -321,6 +346,8 @@ private fun BatteryStatus(controller: PartsController, @Suppress("UNUSED_PARAMET
         when {
             c.bypass -> R.string.status_bypass
             c.suspendInput -> R.string.status_held
+            controller.plugged && controller.coolLevel == CoolCharge.VERY_HOT -> R.string.status_cool_very_hot
+            controller.plugged && controller.coolLevel == CoolCharge.HOT -> R.string.status_cool
             controller.plugged -> R.string.status_charging
             else -> R.string.status_unplugged
         }

@@ -15,7 +15,8 @@ on property:sys.ingres.parts.input_suspend=*
 on property:sys.ingres.parts.night_charging=*
     write /sys/class/qcom-battery/night_charging ${sys.ingres.parts.night_charging}
 
-# Bypass: arus cas (uA). 0 = HP memakai daya charger tanpa mengisi baterai.
+# Batas arus cas (uA). 0 = bypass (HP memakai daya charger tanpa mengisi baterai), angka = cas
+# dingin saat baterai panas, negatif = batas dilepas (ADSP kembali ke pengaturannya sendiri).
 on property:sys.ingres.parts.fcc=*
     write /sys/class/power_supply/battery/constant_charge_current ${sys.ingres.parts.fcc}
 

@@ -23,6 +23,7 @@ public class HostTests {
         games();
         tone();
         battery();
+        cool();
         System.out.println("ALL PASS (" + pass + ")");
     }
 
@@ -151,5 +152,24 @@ public class HostTests {
         check(BatteryInfo.formatWatts(12.34f).equals("12.3 W") && BatteryInfo.formatWatts(Float.NaN).equals("-"), "format watt");
         check(BatteryInfo.formatTempC(BatteryInfo.tempC(364)).equals("36.4°C") && BatteryInfo.formatTempC(BatteryInfo.tempC(U)).equals("-"), "format suhu");
         check(BatteryInfo.minutesLeft(90_000) == 2 && BatteryInfo.minutesLeft(1) == 1 && BatteryInfo.minutesLeft(-1) == U, "sisa waktu cas");
+    }
+    private static void cool() {
+        int N = CoolCharge.NORMAL, H = CoolCharge.HOT, V = CoolCharge.VERY_HOT;
+        check(CoolCharge.decide(true, true, 39.9f, 40, N) == N, "dingin: di bawah batas normal");
+        check(CoolCharge.decide(true, true, 40f, 40, N) == H, "dingin: tepat batas -> panas");
+        check(CoolCharge.decide(true, true, 44f, 40, N) == V, "dingin: batas+4 -> sangat panas");
+        check(CoolCharge.decide(true, true, 44f, 40, H) == V, "dingin: panas naik ke sangat panas");
+        check(CoolCharge.decide(true, true, 42.5f, 40, V) == V, "dingin: histeresis sangat panas");
+        check(CoolCharge.decide(true, true, 41.9f, 40, V) == H, "dingin: sangat panas turun ke panas");
+        check(CoolCharge.decide(true, true, 39f, 40, V) == H, "dingin: sangat panas di bawah batas tetap panas");
+        check(CoolCharge.decide(true, true, 38.5f, 40, H) == H, "dingin: histeresis panas");
+        check(CoolCharge.decide(true, true, 38f, 40, H) == N, "dingin: batas-2 kembali normal");
+        check(CoolCharge.decide(false, true, 50f, 40, V) == N, "dingin: mati -> normal");
+        check(CoolCharge.decide(true, false, 50f, 40, V) == N, "dingin: tanpa charger -> normal");
+        check(CoolCharge.decide(true, true, Float.NaN, 40, H) == H && CoolCharge.decide(true, true, Float.NaN, 40, 7) == N,
+                "dingin: suhu tak diketahui pertahankan tingkat");
+        check(CoolCharge.decide(true, true, 36f, 20, N) == H, "dingin: batas dijepit ke 36");
+        check(CoolCharge.clampTemp(99) == CoolCharge.MAX_TEMP && CoolCharge.clampTemp(40) == 40, "dingin: clampTemp");
+        check(CoolCharge.fccUa(H) == 3_000_000 && CoolCharge.fccUa(V) == 1_500_000 && CoolCharge.fccUa(N) == -1, "dingin: arus");
     }
 }

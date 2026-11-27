@@ -49,6 +49,11 @@
     <string name="status_held">ditahan batas</string>
     <string name="status_bypass">bypass, memakai daya charger</string>
     <string name="status_unplugged">tidak dicas</string>
+    <string name="status_cool">mengisi pelan, baterai hangat</string>
+    <string name="status_cool_very_hot">mengisi sangat pelan, baterai panas</string>
+    <string name="cool_title">Cas dingin</string>
+    <string name="cool_desc">Arus cas diturunkan saat baterai mencapai %1$d°C (lebih pelan lagi di %2$d°C), kembali normal setelah dingin</string>
+    <string name="cool_temp">Mulai di %1$d°C</string>
     <string name="bypass_title">Bypass charging (eksperimen)</string>
     <string name="bypass_desc">Saat dicas, HP memakai daya charger tanpa mengisi baterai, jadi baterai lebih dingin</string>
     <string name="bypass_game_only">Hanya saat main game</string>

@@ -50,6 +50,11 @@
     <string name="status_held">paused by limit</string>
     <string name="status_bypass">bypass, running on charger power</string>
     <string name="status_unplugged">not plugged in</string>
+    <string name="status_cool">charging slower, battery warm</string>
+    <string name="status_cool_very_hot">charging very slowly, battery hot</string>
+    <string name="cool_title">Cool charging</string>
+    <string name="cool_desc">Lowers the charging current when the battery reaches %1$d°C (lower again at %2$d°C) and goes back to normal once it cools down</string>
+    <string name="cool_temp">Start at %1$d°C</string>
     <string name="bypass_title">Bypass charging (experimental)</string>
     <string name="bypass_desc">While plugged in, the phone runs on charger power without charging the battery, so the battery stays cooler</string>
     <string name="bypass_game_only">Only while gaming</string>

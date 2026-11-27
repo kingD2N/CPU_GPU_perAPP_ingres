@@ -8,6 +8,7 @@ package org.ingres.parts
 import android.content.Context
 import android.util.Log
 import org.ingres.parts.logic.ChargePolicy
+import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.ThermalProfile
 
 /**
@@ -28,6 +29,12 @@ class PartsController(private val ctx: Context) {
         private set
     var plugged = false
         private set
+    /** Suhu baterai (derajat C), NaN = belum diketahui. */
+    var batteryTemp = Float.NaN
+        private set
+    /** Tingkat cas dingin yang berlaku (CoolCharge.NORMAL/HOT/VERY_HOT). */
+    var coolLevel = CoolCharge.NORMAL
+        private set
     var gameActive = false
         private set
     private var booted = false
@@ -46,9 +53,9 @@ class PartsController(private val ctx: Context) {
 
     /** Dipanggil sekali saat proses mulai. */
     fun start() {
-        // Bypass yang belum dikembalikan (app atau HP mati saat bypass): pulihkan arus cas dulu.
+        // Batas arus yang belum dilepas (app atau HP mati saat bypass/cas dingin): lepas dulu.
         if (prefs.pendingFccRestore > 0) {
-            Log.w(TAG, "Melepas batas arus cas setelah bypass terputus")
+            Log.w(TAG, "Melepas batas arus cas yang tertinggal")
             if (write(SysNodes.PROP_FCC, SysNodes.FCC_RELEASE, force = true)) prefs.pendingFccRestore = 0
         }
         applyAll()
@@ -61,11 +68,14 @@ class PartsController(private val ctx: Context) {
         if (prefs.flatMode) pushFlat("1")
     }
 
-    fun onBattery(level: Int, isPlugged: Boolean) {
+    /** @param tempC suhu baterai (derajat C), NaN bila tidak ada */
+    fun onBattery(level: Int, isPlugged: Boolean, tempC: Float) {
         battery.learnIfNeeded(isPlugged)
-        if (level == batteryLevel && isPlugged == plugged) return
+        val sameTemp = tempC == batteryTemp || (tempC.isNaN() && batteryTemp.isNaN())
+        if (level == batteryLevel && isPlugged == plugged && sameTemp) return
         batteryLevel = level
         plugged = isPlugged
+        batteryTemp = tempC
         applyCharge()
     }
 
@@ -110,23 +120,32 @@ class PartsController(private val ctx: Context) {
                 bypassWanted,
             )
         charge = next
+        coolLevel = CoolCharge.decide(prefs.coolEnabled, plugged, batteryTemp, prefs.coolTemp, coolLevel)
         write(SysNodes.PROP_NIGHT_CHARGING, if (next.nightCharging) "1" else "0")
-        applyBypass(next.bypass)
+        // Bypass (FCC 0) menang atas cas dingin.
+        val fcc =
+            when {
+                next.bypass -> "0"
+                coolLevel != CoolCharge.NORMAL -> CoolCharge.fccUa(coolLevel).toString()
+                else -> null
+            }
+        applyFcc(fcc)
         write(SysNodes.PROP_INPUT_SUSPEND, if (next.suspendInput) "1" else "0")
     }
 
     /**
-     * Bypass: arus cas baterai (FCC) 0, HP berjalan dari charger. ingres memakai qti_battery_charger
-     * yang meneruskan nilai ke ADSP sebagai batas tetap, jadi saat selesai FCC TIDAK diisi angka
-     * (itu membatasi cas berikutnya), melainkan dilepas dengan nilai negatif (UINT_MAX di ADSP).
+     * Batas arus cas baterai (FCC): "0" = bypass (HP berjalan dari charger), angka uA = cas dingin,
+     * null = tanpa batas. ingres memakai qti_battery_charger yang meneruskan nilai ke ADSP sebagai
+     * batas tetap, jadi saat selesai FCC TIDAK diisi angka (itu membatasi cas berikutnya),
+     * melainkan dilepas dengan nilai negatif (UINT_MAX di ADSP).
      */
-    private fun applyBypass(active: Boolean) {
+    private fun applyFcc(target: String?) {
         val pending = prefs.pendingFccRestore > 0
-        if (active && !pending) {
+        if (target != null) {
             // Tandai dulu (commit) supaya batas bisa dilepas walau proses mati sesudahnya.
-            prefs.pendingFccRestore = 1
-            write(SysNodes.PROP_FCC, "0", force = true)
-        } else if (!active && pending) {
+            if (!pending) prefs.pendingFccRestore = 1
+            write(SysNodes.PROP_FCC, target, force = !pending)
+        } else if (pending) {
             if (write(SysNodes.PROP_FCC, SysNodes.FCC_RELEASE, force = true)) prefs.pendingFccRestore = 0
         }
     }
