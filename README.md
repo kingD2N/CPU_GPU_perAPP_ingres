@@ -20,6 +20,7 @@ Dibuat oleh [kingD2N](https://github.com/kingD2N). Diuji di Evolution X (Android
 | Profil thermal: Hemat / Harian / Seimbang / Gaming / Performa | `thermal_message/sconfig` (11 / 0 / 20 / 13 / 10) | Seimbang = bawaan ROM (20), tidak ditulis bila tidak diubah |
 | Mode game: daftar game, thermal khusus game, sentuhan 480 Hz, overlay FPS & suhu | `touch_dev/bump_sample_rate`, `sde-crtc-0/measured_fps` | aktif saat game di daftar terbuka di layar depan |
 | Sentuhan 480 Hz di semua aplikasi | `touch_dev/bump_sample_rate` | pengganti "High touch polling rate" di Setelan |
+| Tombol bahu (GameKeys) | `sys.ingres.parts.gamekeys` → `stop`/`start gamekeyd` | tampil bila GameKeys terpasang; dimatikan = layanan aksesibilitas GameKeys dimatikan dan prosesnya dihentikan dulu, lalu gamekeyd dihentikan (sentuhan tidak lagi lewat gamekeyd); cara pakai di halaman |
 | Mode warna Flat | `disp-DSI-0/disp_param` = `6 1` | ditulis ulang saat layar menyala (panel ingres tidak mendukung DC dimming) |
 | Pembersih speaker | speaker bawaan | nada 165 Hz 30 detik, volume dikembalikan sesudahnya |
 | CPU/GPU per Aplikasi | `cpufreq/policy0,4,7`, `kgsl-3d0/devfreq` | profil frekuensi CPU/GPU dan governor per aplikasi (lihat di bawah) |

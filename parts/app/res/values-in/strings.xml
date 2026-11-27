@@ -82,6 +82,11 @@
     <string name="overlay_preview">Coba tampilkan</string>
     <string name="overlay_hide">Sembunyikan</string>
 
+    <string name="section_triggers">Tombol bahu</string>
+    <string name="triggers_title">Tombol bahu (GameKeys)</string>
+    <string name="triggers_desc">Mati: tombol bahu tidak lagi mengetuk layar, dan sentuhan layar langsung ke sistem tanpa lewat layanan tombol bahu</string>
+    <string name="triggers_howto">Cara pakai: buka game, angkat kedua tombol bahu bersamaan, lalu geser penanda ke tombol di game. Turunkan kedua tombol untuk menyimpan. Posisi disimpan per game.</string>
+
     <string name="section_display">Layar &amp; sentuhan</string>
     <string name="flat_title">Mode warna Flat (eksperimen)</string>
     <string name="flat_desc">Gamma panel flat untuk warna lebih akurat</string>

@@ -18,6 +18,9 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Menyembunyikan ikon/entri Setelan ganda milik LED, CPU/GPU per Aplikasi, dan Dolby. -->
     <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
+    <!-- Tombol bahu: layanan aksesibilitas GameKeys dan menghentikan prosesnya. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
 
     <application
         android:name=".PartsApplication"

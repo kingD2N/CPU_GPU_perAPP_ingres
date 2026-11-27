@@ -83,6 +83,11 @@
     <string name="overlay_preview">Preview</string>
     <string name="overlay_hide">Hide</string>
 
+    <string name="section_triggers">Shoulder triggers</string>
+    <string name="triggers_title">Shoulder triggers (GameKeys)</string>
+    <string name="triggers_desc">Off: pressing a trigger no longer taps the screen, and screen touches go straight to the system instead of through the trigger service</string>
+    <string name="triggers_howto">How to use: open a game, raise both triggers together, then move the markers onto the game buttons. Lower both triggers to save. Positions are saved per game.</string>
+
     <string name="section_display">Display &amp; touch</string>
     <string name="flat_title">Flat color mode (experimental)</string>
     <string name="flat_desc">Flat panel gamma for more accurate colors</string>

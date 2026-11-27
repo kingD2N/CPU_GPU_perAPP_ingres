@@ -135,6 +135,8 @@ private fun MainScreen(
     var overlay by remember { mutableStateOf(prefs.gameOverlay) }
     var preview by remember { mutableStateOf(false) }
     var flat by remember { mutableStateOf(prefs.flatMode) }
+    var gameKeys by remember { mutableStateOf(prefs.gameKeysEnabled) }
+    val hasGameKeys = remember { EntryPoints.isInstalled(context, EntryPoints.GAMEKEYS_PKG) }
     var cleaning by remember { mutableStateOf(speaker.isRunning) }
 
     // Status baterai diperbarui tiap 2 detik selama halaman terbuka.
@@ -284,6 +286,22 @@ private fun MainScreen(
                         modifier = Modifier.padding(horizontal = 16.dp),
                     ) {
                         Text(stringResource(if (preview) R.string.overlay_hide else R.string.overlay_preview))
+                    }
+                }
+            }
+
+            if (hasGameKeys) {
+                item {
+                    Section(stringResource(R.string.section_triggers)) {
+                        SwitchRow(stringResource(R.string.triggers_title), stringResource(R.string.triggers_desc), gameKeys) {
+                            gameKeys = it; prefs.gameKeysEnabled = it; applied()
+                        }
+                        Text(
+                            stringResource(R.string.triggers_howto),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
                     }
                 }
             }

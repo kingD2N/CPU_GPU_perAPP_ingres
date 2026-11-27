@@ -78,6 +78,11 @@ class PartsPrefs(context: Context) {
         get() = prefs.getBoolean(K_GAME_OVERLAY, false)
         set(v) = prefs.edit().putBoolean(K_GAME_OVERLAY, v).apply()
 
+    /** Tombol bahu (layanan gamekeyd). Bawaan menyala seperti ROM. */
+    var gameKeysEnabled: Boolean
+        get() = prefs.getBoolean(K_GAMEKEYS, true)
+        set(v) = prefs.edit().putBoolean(K_GAMEKEYS, v).apply()
+
     var flatMode: Boolean
         get() = prefs.getBoolean(K_FLAT, false)
         set(v) = prefs.edit().putBoolean(K_FLAT, v).apply()
@@ -114,6 +119,7 @@ class PartsPrefs(context: Context) {
         const val K_GAME_OVERLAY = "game_overlay"
         const val K_TOUCH_ALWAYS = "touch_always"
         const val K_FLAT = "flat_mode"
+        const val K_GAMEKEYS = "gamekeys_enabled"
         const val K_FCC_RESTORE = "fcc_restore"
         const val K_DISCHARGE_SIGN = "discharge_sign"
     }

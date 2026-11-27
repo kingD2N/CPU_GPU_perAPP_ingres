@@ -51,6 +51,9 @@ class PartsController(private val ctx: Context) {
 
     private var flatNonce = 0
 
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val gameKeysToken = Any()
+
     /** Dipanggil sekali saat proses mulai. */
     fun start() {
         // Batas arus yang belum dilepas (app atau HP mati saat bypass/cas dingin): lepas dulu.
@@ -106,6 +109,7 @@ class PartsController(private val ctx: Context) {
         applyTouch()
         applyOverlay()
         applyFlat()
+        applyGameKeys()
     }
 
     private fun applyCharge() {
@@ -190,6 +194,31 @@ class PartsController(private val ctx: Context) {
         }
     }
 
+    /**
+     * Tombol bahu: gamekeyd (GameKeys) dijalankan ROM saat boot selesai dan mengambil alih layar
+     * sentuh (sentuhan diteruskan lewat uinput). Dimatikan = layanan aksesibilitas GameKeys dimatikan
+     * dan prosesnya dihentikan, lalu gamekeyd dihentikan. Dinyalakan = gamekeyd dijalankan, layanan
+     * aksesibilitas menyusul setelah gamekeyd siap (lihat GameKeysControl). Tidak menyentuh apa pun
+     * selama pengguna belum pernah mematikannya, dan baru ditulis sesudah boot.
+     */
+    private fun applyGameKeys() {
+        if (!booted) return
+        val on = prefs.gameKeysEnabled
+        val v = if (on) "1" else "0"
+        if (written[SysNodes.PROP_GAMEKEYS] == null && on) return
+        if (written[SysNodes.PROP_GAMEKEYS] == v) return
+        if (!EntryPoints.isInstalled(ctx, GameKeysControl.PKG)) return
+        handler.removeCallbacksAndMessages(gameKeysToken)
+        if (on) {
+            write(SysNodes.PROP_GAMEKEYS, v)
+            handler.postDelayed({ GameKeysControl.setAccessibility(ctx, true) }, gameKeysToken, GAMEKEYS_START_MS)
+        } else {
+            GameKeysControl.setAccessibility(ctx, false)
+            GameKeysControl.forceStop(ctx)
+            write(SysNodes.PROP_GAMEKEYS, v)
+        }
+    }
+
     /** Uji overlay dari UI tanpa harus membuka game. */
     fun previewOverlay(show: Boolean) {
         if (show) overlay.show() else if (!(gameActive && prefs.gameOverlay)) overlay.hide()
@@ -204,5 +233,7 @@ class PartsController(private val ctx: Context) {
 
     private companion object {
         const val TAG = "IngresParts"
+        /** Jeda sebelum layanan aksesibilitas GameKeys dinyalakan lagi (gamekeyd mendaftarkan diri). */
+        const val GAMEKEYS_START_MS = 1500L
     }
 }

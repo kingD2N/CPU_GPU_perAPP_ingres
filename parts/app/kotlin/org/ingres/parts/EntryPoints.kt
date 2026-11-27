@@ -56,6 +56,17 @@ object EntryPoints {
         }
     }
 
+    /** GameKeys (tombol bahu): app tanpa activity, diatur dari bagian Tombol bahu. */
+    const val GAMEKEYS_PKG = "org.ingres.gamekeys"
+
+    fun isInstalled(ctx: Context, pkg: String): Boolean =
+        try {
+            ctx.packageManager.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(ANY_BOOT.toLong()))
+            true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+
     /** Intent ke activity asli fitur, atau null bila aplikasinya tidak terpasang. */
     fun intentFor(ctx: Context, f: Feature): Intent? {
         val cn = ComponentName(f.pkg, f.activity)

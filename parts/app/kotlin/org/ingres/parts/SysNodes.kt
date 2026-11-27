@@ -23,6 +23,8 @@ object SysNodes {
     const val PROP_SCONFIG = "sys.ingres.parts.sconfig"
     const val PROP_TOUCH_BOOST = "sys.ingres.parts.touch_boost"
     const val PROP_FLAT = "sys.ingres.parts.flat"
+    /** Tombol bahu: 0 = hentikan gamekeyd, 1 = jalankan lagi (init.ingres_parts.rc). */
+    const val PROP_GAMEKEYS = "sys.ingres.parts.gamekeys"
     /** Pemicu tulis ulang mode Flat (init hanya terpicu bila nilai properti berubah). */
     const val PROP_FLAT_APPLY = "sys.ingres.parts.flat_apply"
 

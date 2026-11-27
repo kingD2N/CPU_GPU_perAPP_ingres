@@ -28,6 +28,14 @@ on property:sys.ingres.parts.sconfig=*
 on property:sys.ingres.parts.touch_boost=*
     write /sys/devices/virtual/touch/touch_dev/bump_sample_rate ${sys.ingres.parts.touch_boost}
 
+# Tombol bahu (GameKeys): 0 = hentikan gamekeyd (berhenti mengambil alih layar sentuh),
+# 1 = jalankan lagi. Hanya ditulis bila pengguna mematikannya di Ingres Parts.
+on property:sys.ingres.parts.gamekeys=0
+    stop gamekeyd
+
+on property:sys.ingres.parts.gamekeys=1
+    start gamekeyd
+
 # Mode warna Flat: disp_param "<id fitur> <nilai>", DISP_FEATURE_FLAT_MODE = 6.
 # Dipicu flat_apply supaya bisa ditulis ulang dengan nilai yang sama (setelah layar menyala).
 on property:sys.ingres.parts.flat_apply=*

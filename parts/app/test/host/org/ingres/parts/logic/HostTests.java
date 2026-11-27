@@ -24,6 +24,7 @@ public class HostTests {
         tone();
         battery();
         cool();
+        services();
         System.out.println("ALL PASS (" + pass + ")");
     }
 
@@ -171,5 +172,19 @@ public class HostTests {
         check(CoolCharge.decide(true, true, 36f, 20, N) == H, "dingin: batas dijepit ke 36");
         check(CoolCharge.clampTemp(99) == CoolCharge.MAX_TEMP && CoolCharge.clampTemp(40) == 40, "dingin: clampTemp");
         check(CoolCharge.fccUa(H) == 3_000_000 && CoolCharge.fccUa(V) == 1_500_000 && CoolCharge.fccUa(N) == -1, "dingin: arus");
+    }
+    private static void services() {
+        String gk = "org.ingres.gamekeys/org.ingres.gamekeys.service.AccessibilityService";
+        String other = "com.x/com.x.A11y";
+        check(ServiceList.set(null, gk, true).equals(gk) && ServiceList.set("null", gk, true).equals(gk)
+                && ServiceList.set("", gk, true).equals(gk), "a11y: nyalakan dari kosong");
+        check(ServiceList.set(other, gk, true).equals(other + ":" + gk), "a11y: tambah di akhir");
+        check(ServiceList.set(other + ":" + gk, gk, true).equals(other + ":" + gk), "a11y: tidak dobel");
+        check(ServiceList.set(gk + ":" + other + ":" + gk, gk, false).equals(other), "a11y: matikan semua salinan");
+        check(ServiceList.set("org.ingres.gamekeys/.service.AccessibilityService:" + other, gk, false).equals(other), "a11y: bentuk singkat");
+        check(ServiceList.set(gk, gk, false).equals(""), "a11y: kosong setelah dimatikan");
+        check(ServiceList.set(other + "::" + other, gk, false).equals(other), "a11y: rapikan daftar");
+        check(ServiceList.contains("a/b.C:org.ingres.gamekeys/.service.AccessibilityService", gk)
+                && !ServiceList.contains(other, gk) && !ServiceList.contains(null, gk), "a11y: contains");
     }
 }
