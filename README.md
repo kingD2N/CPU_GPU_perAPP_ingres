@@ -61,8 +61,13 @@ Bahasa: Indonesia dan Inggris (mengikuti bahasa HP).
 
 5. Build ROM seperti biasa.
 
-Tanpa CPU/GPU per Aplikasi: isi `INGRES_PARTS_PERF := false` di `device.mk` **dan** `BoardConfig.mk`
-sebelum include. Path lain: isi `INGRES_PARTS_PATH := <path>` di keduanya.
+Sakelar, diisi di `device.mk` **dan** `BoardConfig.mk` sebelum include:
+
+| Sakelar | Bawaan | Arti |
+|---|---|---|
+| `INGRES_PARTS_APP` | `true` | aplikasi Ingres Parts; `false` = hanya CPU/GPU per Aplikasi |
+| `INGRES_PARTS_PERF` | `true` | CPU/GPU per Aplikasi |
+| `INGRES_PARTS_PATH` | `packages/apps/IngresParts` | lokasi repo ini di source |
 
 ### Pembaruan dari CPU_GPU_perAPP_ingres
 
