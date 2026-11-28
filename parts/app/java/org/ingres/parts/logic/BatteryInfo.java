@@ -10,7 +10,8 @@ import java.util.Locale;
 /**
  * Pengolah angka info baterai (tanpa Android). Sumber di ingres (qti_battery_charger Xiaomi):
  * power_supply/battery (charge_full, charge_full_design, cycle_count, current_now) dan
- * qcom-battery (fg1_soh, fg1_cycle, real_type, power_max). Semua masukan boleh "tidak ada".
+ * qcom-battery (real_type, power_max). Semua masukan boleh "tidak ada". Node fg1_* di
+ * qcom-battery tidak dipakai karena isinya tidak masuk akal di ingres.
  */
 public final class BatteryInfo {
     /** Nilai "tidak diketahui" untuk angka bulat. */
@@ -52,14 +53,30 @@ public final class BatteryInfo {
         return raw >= 100_000 ? raw / 1000 : raw;
     }
 
+    /** Tegangan (mV) di atas ini = dua sel seri (ingres: 2 x 2350 mAh, ~7,7 V). */
+    public static final int SERIES_2S_MV = 5000;
+
     /**
-     * Kesehatan baterai dalam persen. Utamakan SOH fuel gauge (qcom-battery/fg1_soh, yang dipakai
-     * MIUI), selain itu kapasitas penuh dibagi kapasitas desain. Dibatasi 100. UNKNOWN bila
-     * tidak ada keduanya.
+     * Kapasitas penuh (mAh) dalam satuan yang sama dengan kapasitas desain. Baterai ingres dua sel
+     * seri: charge_full dilaporkan per rangkaian seri (2384 mAh) tetapi charge_full_design sebagai
+     * jumlah dua sel (4700 mAh), jadi kapasitas penuh dikali jumlah sel. UNKNOWN bila tidak ada.
      */
-    public static int healthPercent(int fgSoh, int fullRaw, int designRaw) {
-        if (fgSoh != UNKNOWN && fgSoh > 0 && fgSoh <= 110) return Math.min(fgSoh, 100);
+    public static int fullMah(int fullRaw, int designRaw, int voltageMv) {
         int full = toMah(fullRaw);
+        int design = toMah(designRaw);
+        if (full == UNKNOWN) return UNKNOWN;
+        boolean series2 = voltageMv != UNKNOWN && voltageMv >= SERIES_2S_MV;
+        if (series2 && design != UNKNOWN && full * 3 < design * 2) return full * 2;
+        return full;
+    }
+
+    /**
+     * Kesehatan baterai dalam persen: kapasitas penuh (lihat fullMah) dibagi kapasitas desain,
+     * dibatasi 100. UNKNOWN bila tidak ada. (qcom-battery/fg1_soh tidak dipakai: di ingres nilainya
+     * tidak masuk akal, mis. 1980.)
+     */
+    public static int healthPercent(int fullRaw, int designRaw, int voltageMv) {
+        int full = fullMah(fullRaw, designRaw, voltageMv);
         int design = toMah(designRaw);
         if (full == UNKNOWN || design == UNKNOWN) return UNKNOWN;
         int pct = Math.round(full * 100f / design);
@@ -67,11 +84,13 @@ public final class BatteryInfo {
         return Math.min(pct, 100);
     }
 
-    /** Siklus cas: dari Android/power_supply dulu, lalu fuel gauge. UNKNOWN bila tidak ada. */
-    public static int cycles(int fromAndroid, int fromPsy, int fromFg) {
-        if (fromAndroid != UNKNOWN && fromAndroid >= 0) return fromAndroid;
-        if (fromPsy != UNKNOWN && fromPsy >= 0) return fromPsy;
-        if (fromFg != UNKNOWN && fromFg >= 0) return fromFg;
+    /** Siklus cas di atas ini dianggap bacaan rusak. */
+    public static final int MAX_CYCLES = 10_000;
+
+    /** Siklus cas: dari Android dulu, lalu power_supply/battery/cycle_count. UNKNOWN bila tidak ada. */
+    public static int cycles(int fromAndroid, int fromPsy) {
+        if (fromAndroid != UNKNOWN && fromAndroid >= 0 && fromAndroid <= MAX_CYCLES) return fromAndroid;
+        if (fromPsy != UNKNOWN && fromPsy >= 0 && fromPsy <= MAX_CYCLES) return fromPsy;
         return UNKNOWN;
     }
 

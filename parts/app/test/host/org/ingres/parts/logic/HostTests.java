@@ -124,15 +124,19 @@ public class HostTests {
                 && BatteryInfo.parseInt(null) == U && BatteryInfo.parseInt("") == U, "baterai: urai angka");
         check(BatteryInfo.toMah(4700000) == 4700 && BatteryInfo.toMah(4700) == 4700 && BatteryInfo.toMah(0) == U
                 && BatteryInfo.toMah(U) == U, "baterai: uAh ke mAh");
-        // SOH fuel gauge diutamakan, lalu full/design, dibatasi 100.
-        check(BatteryInfo.healthPercent(92, 4000000, 4700000) == 92, "baterai: pakai fg1_soh");
-        check(BatteryInfo.healthPercent(U, 4512000, 4700000) == 96, "baterai: full/design");
-        check(BatteryInfo.healthPercent(0, 4512000, 4700000) == 96, "baterai: fg1_soh 0 diabaikan");
-        check(BatteryInfo.healthPercent(105, U, U) == 100, "baterai: fg1_soh dibatasi 100");
-        check(BatteryInfo.healthPercent(U, 4800000, 4700000) == 100, "baterai: full>design dibatasi 100");
-        check(BatteryInfo.healthPercent(U, U, 4700000) == U && BatteryInfo.healthPercent(250, U, U) == U, "baterai: SOH tak diketahui");
-        check(BatteryInfo.cycles(120, 5, 7) == 120 && BatteryInfo.cycles(U, 5, 7) == 5 && BatteryInfo.cycles(-1, U, 7) == 7
-                && BatteryInfo.cycles(U, U, U) == U, "baterai: siklus");
+        // ingres: dua sel seri. charge_full per rangkaian (2384 mAh), desain jumlah dua sel (4700 mAh).
+        check(BatteryInfo.fullMah(2384000, 4700000, 7560) == 4768, "baterai: 2 sel seri -> kapasitas x2");
+        check(BatteryInfo.healthPercent(2384000, 4700000, 7560) == 100, "baterai: 2 sel seri sehat (bukan 51%)");
+        check(BatteryInfo.healthPercent(1900000, 4700000, 7700) == 81, "baterai: 2 sel seri aus");
+        check(BatteryInfo.fullMah(4512000, 4700000, 7560) == 4512, "baterai: desain sudah per rangkaian, tidak dikali");
+        // Satu sel (atau tegangan tak diketahui): apa adanya.
+        check(BatteryInfo.healthPercent(4512000, 4700000, 3850) == 96, "baterai: 1 sel full/design");
+        check(BatteryInfo.healthPercent(2384000, 4700000, U) == 51, "baterai: tegangan tak diketahui, apa adanya");
+        check(BatteryInfo.healthPercent(4800000, 4700000, 3850) == 100, "baterai: full>design dibatasi 100");
+        check(BatteryInfo.healthPercent(U, 4700000, 7560) == U && BatteryInfo.healthPercent(2384000, U, 7560) == U, "baterai: SOH tak diketahui");
+        check(BatteryInfo.fullMah(U, 4700000, 7560) == U, "baterai: full tak diketahui");
+        check(BatteryInfo.cycles(120, 5) == 120 && BatteryInfo.cycles(U, 1401) == 1401 && BatteryInfo.cycles(-1, U) == U
+                && BatteryInfo.cycles(U, 1192000) == U && BatteryInfo.cycles(U, U) == U, "baterai: siklus");
         // Tanda arus dipelajari saat charger tercabut.
         check(BatteryInfo.learnDischargeSign(-800000, false) == -1, "arus: belajar tanda negatif");
         check(BatteryInfo.learnDischargeSign(800000, false) == 1, "arus: belajar tanda positif");

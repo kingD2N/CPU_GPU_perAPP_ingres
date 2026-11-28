@@ -13,7 +13,7 @@ Dibuat oleh [kingD2N](https://github.com/kingD2N). Diuji di Evolution X (Android
 
 | Fitur | Node | Keterangan |
 |---|---|---|
-| Info baterai: kesehatan, kapasitas, siklus, suhu, tegangan, arus, daya, charger | `qcom-battery/fg1_soh`, `fg1_cycle`, `real_type`, `power_max`, `power_supply/battery` | diperbarui tiap 2 detik selama halaman terbuka; arah arus dipelajari saat charger dicabut |
+| Info baterai: kesehatan, kapasitas, siklus, suhu, tegangan, arus, daya, charger | `power_supply/battery` (`charge_full`, `charge_full_design`, `cycle_count`), `qcom-battery/real_type`, `power_max` | baterai ingres dua sel seri: kapasitas penuh dikali 2 sebelum dibandingkan dengan desain 4700 mAh; diperbarui tiap 2 detik selama halaman terbuka; arah arus dipelajari saat charger dicabut |
 | Batas cas: Normal / Optimal 80% / Batas 50–95% | `qcom-battery/night_charging`, `input_suspend` | batas kustom lanjut cas lagi 5% di bawah batas |
 | Bypass charging (eksperimen) | `power_supply/battery/constant_charge_current` | HP memakai daya charger tanpa mengisi baterai; bisa hanya saat main game |
 | Cas dingin | `power_supply/battery/constant_charge_current` | arus cas dibatasi 3 A saat baterai mencapai batas suhu (36–45°C, bawaan 40), 1,5 A di batas+4°C; dilepas (`-1`) di batas−2°C atau saat charger dicabut |

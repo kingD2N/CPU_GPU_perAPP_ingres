@@ -32,7 +32,6 @@ class BatteryReader(private val ctx: Context, private val prefs: PartsPrefs) {
     private var fullMah = BatteryInfo.UNKNOWN
     private var designMah = BatteryInfo.UNKNOWN
     private var psyCycles = BatteryInfo.UNKNOWN
-    private var fgCycles = BatteryInfo.UNKNOWN
 
     class Snapshot(
         val level: Int,
@@ -58,28 +57,22 @@ class BatteryReader(private val ctx: Context, private val prefs: PartsPrefs) {
     fun read(): Snapshot? {
         val i: Intent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return null
         val now = SystemClock.elapsedRealtime()
+        val voltage = i.getIntExtra(BatteryManager.EXTRA_VOLTAGE, BatteryInfo.UNKNOWN)
         if (slowAt == 0L || now - slowAt > SLOW_MS) {
             slowAt = now
             val full = BatteryInfo.parseInt(SysNodes.read(psy + PSY_FULL))
             val design = BatteryInfo.parseInt(SysNodes.read(psy + PSY_DESIGN))
-            fullMah = BatteryInfo.toMah(full)
+            fullMah = BatteryInfo.fullMah(full, design, voltage)
             designMah = BatteryInfo.toMah(design)
-            health = BatteryInfo.healthPercent(BatteryInfo.parseInt(SysNodes.read(NODE_FG_SOH)), full, design)
+            health = BatteryInfo.healthPercent(full, design, voltage)
             psyCycles = BatteryInfo.parseInt(SysNodes.read(psy + PSY_CYCLE))
-            fgCycles = BatteryInfo.parseInt(SysNodes.read(NODE_FG_CYCLE))
         }
 
         val level = i.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = i.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
         val plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
-        val voltage = i.getIntExtra(BatteryManager.EXTRA_VOLTAGE, BatteryInfo.UNKNOWN)
         val tempC = BatteryInfo.tempC(i.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, BatteryInfo.UNKNOWN))
-        val cycles =
-            BatteryInfo.cycles(
-                i.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, BatteryInfo.UNKNOWN),
-                psyCycles,
-                fgCycles,
-            )
+        val cycles = BatteryInfo.cycles(i.getIntExtra(BatteryManager.EXTRA_CYCLE_COUNT, BatteryInfo.UNKNOWN), psyCycles)
 
         val currentUa = currentUa()
         learnSign(currentUa, plugged)
@@ -161,8 +154,6 @@ class BatteryReader(private val ctx: Context, private val prefs: PartsPrefs) {
         const val PSY_CYCLE = "cycle_count"
         const val PSY_CURRENT = "current_now"
         const val QB = "/sys/class/qcom-battery/"
-        const val NODE_FG_SOH = QB + "fg1_soh"
-        const val NODE_FG_CYCLE = QB + "fg1_cycle"
         const val NODE_REAL_TYPE = QB + "real_type"
         const val NODE_POWER_MAX = QB + "power_max"
     }
