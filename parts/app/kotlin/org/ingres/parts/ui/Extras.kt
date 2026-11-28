@@ -94,6 +94,8 @@ internal fun ChoiceDialog(
 private fun triggerLabel(action: String): String =
     stringResource(
         when (action) {
+            TriggerAction.VOLUME -> R.string.trigger_volume
+            TriggerAction.OPEN_APP -> R.string.trigger_app
             TriggerAction.TORCH -> R.string.trigger_torch
             TriggerAction.CAMERA -> R.string.trigger_camera
             TriggerAction.SCREENSHOT -> R.string.trigger_screenshot
@@ -104,12 +106,38 @@ private fun triggerLabel(action: String): String =
         },
     )
 
-/** Tombol bahu di luar game: aksi tombol atas dan bawah. */
+/** Nama aplikasi dari paket; paket kosong = "pilih aplikasi". */
 @Composable
-internal fun TriggerActionRows(controller: PartsController) {
+private fun appLabel(pkg: String): String {
+    val context = LocalContext.current
+    if (pkg.isEmpty()) return stringResource(R.string.trigger_app_pick)
+    return remember(pkg) {
+        try {
+            val pm = context.packageManager
+            pm.getApplicationInfo(pkg, android.content.pm.PackageManager.ApplicationInfoFlags.of(0L))
+                .loadLabel(pm)
+                .toString()
+        } catch (e: Exception) {
+            pkg
+        }
+    }
+}
+
+/** Deskripsi baris tombol: aksi, plus nama aplikasi untuk "Buka aplikasi". */
+@Composable
+private fun triggerDesc(action: String, pkg: String): String =
+    if (action == TriggerAction.OPEN_APP) triggerLabel(action) + " · " + appLabel(pkg) else triggerLabel(action)
+
+/**
+ * Tombol bahu di luar game: aksi tombol atas, bawah, dan kombinasi keduanya.
+ * @param onPickApp buka pemilih aplikasi untuk slot "upper" / "lower" / "combo"
+ */
+@Composable
+internal fun TriggerActionRows(controller: PartsController, onPickApp: (String) -> Unit) {
     val prefs = controller.prefs
     var upper by remember { mutableStateOf(prefs.triggerUpper) }
     var lower by remember { mutableStateOf(prefs.triggerLower) }
+    var combo by remember { mutableStateOf(prefs.triggerCombo) }
     var editing by remember { mutableStateOf<String?>(null) }
     Text(
         stringResource(R.string.trigger_outside_title),
@@ -122,22 +150,52 @@ internal fun TriggerActionRows(controller: PartsController) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 16.dp),
     )
-    ClickRow(stringResource(R.string.trigger_upper), triggerLabel(upper)) { editing = "upper" }
-    ClickRow(stringResource(R.string.trigger_lower), triggerLabel(lower)) { editing = "lower" }
+    ClickRow(stringResource(R.string.trigger_upper), triggerDesc(upper, prefs.triggerApp("upper"))) { editing = "upper" }
+    ClickRow(stringResource(R.string.trigger_lower), triggerDesc(lower, prefs.triggerApp("lower"))) { editing = "lower" }
+    ClickRow(stringResource(R.string.trigger_combo), triggerDesc(combo, prefs.triggerApp("combo"))) { editing = "combo" }
+    if (upper == TriggerAction.VOLUME || lower == TriggerAction.VOLUME) {
+        Text(
+            stringResource(R.string.trigger_volume_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+    }
     val which = editing
     if (which != null) {
-        val options = TriggerAction.ALL.map { it to triggerLabel(it) }
+        // Volume (tekan/tahan) hanya untuk satu tombol, bukan kombinasi.
+        val actions = if (which == "combo") TriggerAction.ALL.filter { it != TriggerAction.VOLUME } else TriggerAction.ALL.toList()
         ChoiceDialog(
-            title = stringResource(if (which == "upper") R.string.trigger_upper else R.string.trigger_lower),
-            options = options,
-            selected = if (which == "upper") upper else lower,
+            title =
+                stringResource(
+                    when (which) {
+                        "upper" -> R.string.trigger_upper
+                        "lower" -> R.string.trigger_lower
+                        else -> R.string.trigger_combo
+                    },
+                ),
+            options = actions.map { it to triggerLabel(it) },
+            selected =
+                when (which) {
+                    "upper" -> upper
+                    "lower" -> lower
+                    else -> combo
+                },
             onSelect = {
-                if (which == "upper") {
-                    upper = it; prefs.triggerUpper = it
-                } else {
-                    lower = it; prefs.triggerLower = it
+                when (which) {
+                    "upper" -> {
+                        upper = it; prefs.triggerUpper = it
+                    }
+                    "lower" -> {
+                        lower = it; prefs.triggerLower = it
+                    }
+                    else -> {
+                        combo = it; prefs.triggerCombo = it
+                    }
                 }
                 controller.applyAll()
+                // "Buka aplikasi" selalu minta pilih aplikasinya.
+                if (it == TriggerAction.OPEN_APP) onPickApp(which)
             },
             onDismiss = { editing = null },
         )

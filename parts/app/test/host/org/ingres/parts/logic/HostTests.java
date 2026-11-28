@@ -30,6 +30,7 @@ public class HostTests {
         batteryLog();
         backup();
         colorModes();
+        gestures();
         System.out.println("ALL PASS (" + pass + ")");
     }
 
@@ -293,5 +294,66 @@ public class HostTests {
         check(m.size() == 3 && m.get(0).label.equals("Vivid") && m.get(2).value == 269, "warna: hanya mode yang tersedia");
         check("Saturated".equals(ColorModes.labelOf(m, 256)) && ColorModes.labelOf(m, 999) == null, "warna: label");
         check(ColorModes.available(null, null, null).isEmpty(), "warna: tanpa data");
+    }
+    private static void gestures() {
+        int U = TriggerAction.KEY_UPPER, L = TriggerAction.KEY_LOWER;
+        TriggerGesture.Event tapU = ev(TriggerGesture.TAP, U), tapL = ev(TriggerGesture.TAP, L);
+        TriggerGesture.Event holdU = ev(TriggerGesture.HOLD, U), combo = ev(TriggerGesture.COMBO, 0);
+        check(TriggerAction.usesHold(TriggerAction.VOLUME) && !TriggerAction.usesHold(TriggerAction.TORCH), "gerak: volume pakai tahan");
+        check(TriggerAction.normalize("volume").equals(TriggerAction.VOLUME) && TriggerAction.normalize("app").equals(TriggerAction.OPEN_APP), "gerak: aksi baru dikenal");
+
+        // Tanpa kombinasi dan tanpa tahan: langsung saat ditekan.
+        TriggerGesture g = new TriggerGesture();
+        g.configure(false, false, false);
+        check(g.onDown(U, 0).equals(java.util.List.of(tapU)), "gerak: tap langsung");
+        check(g.onUp(U, 50).isEmpty() && g.nextTickAt() == -1, "gerak: lepas tanpa kejadian lagi");
+
+        // Volume: tekan singkat = TAP saat dilepas, tahan = HOLD lalu berulang.
+        g.configure(false, true, false);
+        check(g.onDown(U, 1000).isEmpty() && g.nextTickAt() == 1000 + TriggerGesture.HOLD_MS, "gerak: volume menunggu");
+        check(g.onUp(U, 1200).equals(java.util.List.of(tapU)), "gerak: volume tekan singkat = naik");
+        g.onDown(U, 2000);
+        check(g.tick(2000 + TriggerGesture.HOLD_MS).equals(java.util.List.of(holdU)), "gerak: tahan = turun");
+        check(g.tick(2000 + TriggerGesture.HOLD_MS + 100).isEmpty(), "gerak: belum waktunya ulang");
+        check(g.tick(2000 + TriggerGesture.HOLD_MS + TriggerGesture.REPEAT_MS).equals(java.util.List.of(holdU)), "gerak: tahan berulang");
+        check(g.onUp(U, 3000).isEmpty(), "gerak: lepas setelah tahan tidak menaikkan");
+
+        // Kombinasi: dua tombol dalam jendela = COMBO saja.
+        g.reset();
+        g.configure(true, false, false);
+        check(g.onDown(U, 5000).isEmpty(), "gerak: kombinasi menunggu tombol kedua");
+        check(g.onDown(L, 5000 + 100).equals(java.util.List.of(combo)), "gerak: kombinasi terdeteksi");
+        check(g.tick(6000).isEmpty() && g.onUp(U, 6000).isEmpty() && g.onUp(L, 6010).isEmpty(), "gerak: setelah kombinasi tidak ada tap");
+        // Tombol kedua terlambat: tap pertama jalan, tombol kedua diabaikan.
+        g.onDown(U, 7000);
+        check(g.tick(7000 + TriggerGesture.COMBO_MS).equals(java.util.List.of(tapU)), "gerak: tanpa tombol kedua = tap");
+        check(g.onDown(L, 7300).isEmpty() && g.onUp(L, 7400).isEmpty(), "gerak: tombol kedua terlambat diabaikan");
+        g.onUp(U, 7500);
+        // Dilepas sebelum jendela habis = tap saat dilepas.
+        g.onDown(L, 8000);
+        check(g.onUp(L, 8050).equals(java.util.List.of(tapL)), "gerak: tekan cepat saat kombinasi aktif");
+        // Kombinasi + volume di tombol atas.
+        g.configure(true, true, false);
+        g.onDown(U, 9000);
+        check(g.onDown(L, 9050).equals(java.util.List.of(combo)), "gerak: kombinasi menang atas volume");
+        g.onUp(U, 9500); g.onUp(L, 9500);
+        g.onDown(U, 10000);
+        check(g.tick(10000 + TriggerGesture.COMBO_MS).isEmpty(), "gerak: volume tidak tap setelah jendela kombinasi");
+        check(g.tick(10000 + TriggerGesture.HOLD_MS).equals(java.util.List.of(holdU)), "gerak: volume tahan dengan kombinasi aktif");
+        check(g.onDown(U, 10500).isEmpty(), "gerak: ulangan tombol diabaikan");
+    }
+
+    private static TriggerGesture.Event ev(int type, int key) {
+        TriggerGesture g = new TriggerGesture();
+        g.configure(false, false, false);
+        if (type == TriggerGesture.TAP) return g.onDown(key, 0).get(0);
+        if (type == TriggerGesture.COMBO) {
+            g.configure(true, false, false);
+            g.onDown(TriggerAction.KEY_UPPER, 0);
+            return g.onDown(TriggerAction.KEY_LOWER, 1).get(0);
+        }
+        g.configure(false, true, true);
+        g.onDown(key, 0);
+        return g.tick(TriggerGesture.HOLD_MS).get(0);
     }
 }

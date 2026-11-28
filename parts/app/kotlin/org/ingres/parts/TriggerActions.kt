@@ -27,9 +27,26 @@ import org.ingres.parts.logic.TriggerAction
 object TriggerActions {
     private const val TAG = "IngresParts"
 
-    fun run(svc: AccessibilityService, action: String) {
+    /** Volume media naik/turun satu langkah, dengan panel volume sistem. */
+    fun volume(ctx: Context, up: Boolean) {
+        val am = ctx.getSystemService(AudioManager::class.java) ?: return
+        am.adjustStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            if (up) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+            AudioManager.FLAG_SHOW_UI,
+        )
+        tick(ctx)
+    }
+
+    /** @param appPkg paket untuk TriggerAction.OPEN_APP */
+    fun run(svc: AccessibilityService, action: String, appPkg: String = "") {
         try {
             when (action) {
+                TriggerAction.OPEN_APP -> openApp(svc, appPkg)
+                TriggerAction.VOLUME -> {
+                    volume(svc, true)
+                    return
+                }
                 TriggerAction.TORCH -> Torch.toggle(svc)
                 TriggerAction.CAMERA -> camera(svc)
                 TriggerAction.SCREENSHOT -> svc.performGlobalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT)
@@ -42,6 +59,15 @@ object TriggerActions {
         } catch (e: Exception) {
             Log.e(TAG, "Aksi tombol bahu gagal: $action", e)
         }
+    }
+
+    private fun openApp(ctx: Context, pkg: String) {
+        val intent = if (pkg.isEmpty()) null else ctx.packageManager.getLaunchIntentForPackage(pkg)
+        if (intent == null) {
+            Toast.makeText(ctx, R.string.trigger_app_missing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun camera(ctx: Context) {

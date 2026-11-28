@@ -118,6 +118,18 @@ class PartsPrefs(context: Context) {
         get() = TriggerAction.normalize(prefs.getString(K_TRIGGER_LOWER, TriggerAction.NONE))
         set(v) = prefs.edit().putString(K_TRIGGER_LOWER, TriggerAction.normalize(v)).apply()
 
+    /** Aksi saat kedua tombol bahu ditekan bersamaan (TriggerAction.*). */
+    var triggerCombo: String
+        get() = TriggerAction.normalize(prefs.getString(K_TRIGGER_COMBO, TriggerAction.NONE))
+        set(v) = prefs.edit().putString(K_TRIGGER_COMBO, TriggerAction.normalize(v)).apply()
+
+    /** Paket aplikasi untuk aksi "Buka aplikasi" per tombol: "upper", "lower", "combo". */
+    fun triggerApp(slot: String): String = prefs.getString(K_TRIGGER_APP + slot, "") ?: ""
+
+    fun setTriggerApp(slot: String, pkg: String) {
+        prefs.edit().putString(K_TRIGGER_APP + slot, pkg).apply()
+    }
+
     /** Game Toolbox: tab di tepi layar saat game dibuka. */
     var toolboxEnabled: Boolean
         get() = prefs.getBoolean(K_TOOLBOX, false)
@@ -212,6 +224,10 @@ class PartsPrefs(context: Context) {
                 "gamekeys_enabled" to 'b',
                 "trigger_upper" to 's',
                 "trigger_lower" to 's',
+                "trigger_combo" to 's',
+                "trigger_app_upper" to 's',
+                "trigger_app_lower" to 's',
+                "trigger_app_combo" to 's',
                 "toolbox" to 'b',
                 "game_headsup" to 'b',
                 "game_brightness" to 'b',
@@ -240,6 +256,8 @@ class PartsPrefs(context: Context) {
         const val K_DISCHARGE_SIGN = "discharge_sign"
         const val K_TRIGGER_UPPER = "trigger_upper"
         const val K_TRIGGER_LOWER = "trigger_lower"
+        const val K_TRIGGER_COMBO = "trigger_combo"
+        const val K_TRIGGER_APP = "trigger_app_"
         const val K_TOOLBOX = "toolbox"
         const val K_GAME_HEADSUP = "game_headsup"
         const val K_GAME_BRIGHTNESS = "game_brightness"

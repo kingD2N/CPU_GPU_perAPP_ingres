@@ -18,8 +18,12 @@ public final class TriggerAction {
     public static final String MEDIA = "media";
     public static final String RINGER = "ringer";
     public static final String LOCK = "lock";
+    /** Tekan = volume media naik, tahan = turun (berulang selama ditahan). */
+    public static final String VOLUME = "volume";
+    /** Buka aplikasi pilihan pengguna. */
+    public static final String OPEN_APP = "app";
 
-    public static final String[] ALL = {NONE, TORCH, CAMERA, SCREENSHOT, MEDIA, RINGER, LOCK};
+    public static final String[] ALL = {NONE, VOLUME, OPEN_APP, TORCH, CAMERA, SCREENSHOT, MEDIA, RINGER, LOCK};
 
     /** android.view.KeyEvent.KEYCODE_F1 / KEYCODE_F2. */
     public static final int KEY_UPPER = 131;
@@ -34,6 +38,11 @@ public final class TriggerAction {
             }
         }
         return NONE;
+    }
+
+    /** Aksi yang membedakan tekan dan tahan. */
+    public static boolean usesHold(String action) {
+        return VOLUME.equals(action);
     }
 
     /** true bila tombol ini milik tombol bahu (ditekan), baik dipakai maupun tidak. */

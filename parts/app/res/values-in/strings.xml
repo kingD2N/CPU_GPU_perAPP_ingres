@@ -126,6 +126,12 @@
     <string name="trigger_media">Putar / jeda musik</string>
     <string name="trigger_ringer">Bunyi / getar</string>
     <string name="trigger_lock">Kunci layar</string>
+    <string name="trigger_combo">Kedua tombol bersamaan</string>
+    <string name="trigger_volume">Volume media (tekan naik, tahan turun)</string>
+    <string name="trigger_volume_hint">Volume media: tekan sekali untuk menaikkan, tahan untuk terus menurunkan.</string>
+    <string name="trigger_app">Buka aplikasi</string>
+    <string name="trigger_app_pick">Pilih aplikasi</string>
+    <string name="trigger_app_missing">Aplikasi belum dipilih atau sudah dihapus</string>
     <string name="ringer_vibrate">Mode getar</string>
     <string name="ringer_normal">Mode bunyi</string>
 

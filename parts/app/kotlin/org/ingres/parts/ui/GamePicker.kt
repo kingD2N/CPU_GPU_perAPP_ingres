@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -57,10 +58,19 @@ import org.ingres.parts.R
 
 private data class AppEntry(val pkg: String, val label: String, val icon: ImageBitmap?)
 
-/** Daftar aplikasi berikon peluncur dengan kotak centang; yang dicentang = game. */
+/**
+ * Daftar aplikasi berikon peluncur dengan kotak centang; yang dicentang = game.
+ * @param single pilih satu aplikasi (tombol radio), dipakai untuk aksi "Buka aplikasi"
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GamePickerScreen(selected: Set<String>, onToggle: (String, Boolean) -> Unit, onBack: () -> Unit) {
+fun GamePickerScreen(
+    selected: Set<String>,
+    onToggle: (String, Boolean) -> Unit,
+    onBack: () -> Unit,
+    title: Int = R.string.picker_title,
+    single: Boolean = false,
+) {
     val context = LocalContext.current
     val iconPx = with(LocalDensity.current) { 40.dp.roundToPx() }
     var query by rememberSaveable { mutableStateOf("") }
@@ -72,7 +82,7 @@ fun GamePickerScreen(selected: Set<String>, onToggle: (String, Boolean) -> Unit,
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.picker_title)) },
+                title = { Text(stringResource(title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -103,7 +113,11 @@ fun GamePickerScreen(selected: Set<String>, onToggle: (String, Boolean) -> Unit,
                         val checked = app.pkg in selected
                         Row(
                             Modifier.fillMaxWidth()
-                                .toggleable(value = checked, onValueChange = { onToggle(app.pkg, it) }, role = Role.Checkbox)
+                                .toggleable(
+                                    value = checked,
+                                    onValueChange = { onToggle(app.pkg, if (single) true else it) },
+                                    role = if (single) Role.RadioButton else Role.Checkbox,
+                                )
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -121,7 +135,8 @@ fun GamePickerScreen(selected: Set<String>, onToggle: (String, Boolean) -> Unit,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
-                            Checkbox(checked = checked, onCheckedChange = null)
+                            if (single) RadioButton(selected = checked, onClick = null)
+                            else Checkbox(checked = checked, onCheckedChange = null)
                         }
                     }
                 }

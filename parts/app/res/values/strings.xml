@@ -127,6 +127,12 @@
     <string name="trigger_media">Play / pause music</string>
     <string name="trigger_ringer">Sound / vibrate</string>
     <string name="trigger_lock">Lock screen</string>
+    <string name="trigger_combo">Both triggers together</string>
+    <string name="trigger_volume">Media volume (press up, hold down)</string>
+    <string name="trigger_volume_hint">Media volume: press once to raise, hold to keep lowering.</string>
+    <string name="trigger_app">Open app</string>
+    <string name="trigger_app_pick">Choose app</string>
+    <string name="trigger_app_missing">App not chosen or no longer installed</string>
     <string name="ringer_vibrate">Vibrate</string>
     <string name="ringer_normal">Sound on</string>
 

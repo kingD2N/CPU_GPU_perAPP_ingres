@@ -11,12 +11,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import org.ingres.parts.logic.ServiceList
 import org.ingres.parts.logic.TriggerAction
+import org.ingres.parts.logic.TriggerGesture
 
 /**
  * Layanan aksesibilitas Ingres Parts, dua tugas:
@@ -27,6 +29,12 @@ import org.ingres.parts.logic.TriggerAction
  */
 class IngresAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
+    private val gesture = TriggerGesture()
+    private val tick =
+        Runnable {
+            dispatch(gesture.tick(SystemClock.uptimeMillis()))
+            scheduleTick()
+        }
 
     override fun onServiceConnected() {
         instance = this
@@ -44,17 +52,58 @@ class IngresAccessibilityService : AccessibilityService() {
         serviceInfo = info
     }
 
+    /**
+     * Tombol bahu di luar game lewat [TriggerGesture]: tekan, tahan (volume), dan kombinasi dua
+     * tombol. Tombol yang tidak diberi aksi (dan tanpa kombinasi) diteruskan apa adanya.
+     */
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (!TriggerAction.isTriggerKey(event.keyCode)) return false
         val app = application as? PartsApplication ?: return false
         if (!app.isReady) return false
         val c = app.parts
-        val action = TriggerAction.forKey(event.keyCode, c.gameActive, c.prefs.triggerUpper, c.prefs.triggerLower)
-        if (action == TriggerAction.NONE) return false
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            handler.post { TriggerActions.run(this, action) }
+        val p = c.prefs
+        if (c.gameActive || !c.triggersOutsideGame) {
+            gesture.reset()
+            handler.removeCallbacks(tick)
+            return false
         }
+        val combo = p.triggerCombo != TriggerAction.NONE
+        val own = if (event.keyCode == TriggerAction.KEY_UPPER) p.triggerUpper else p.triggerLower
+        if (!combo && own == TriggerAction.NONE) return false
+        gesture.configure(combo, TriggerAction.usesHold(p.triggerUpper), TriggerAction.usesHold(p.triggerLower))
+        when (event.action) {
+            KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) dispatch(gesture.onDown(event.keyCode, event.eventTime))
+            KeyEvent.ACTION_UP -> dispatch(gesture.onUp(event.keyCode, event.eventTime))
+        }
+        scheduleTick()
         return true
+    }
+
+    private fun scheduleTick() {
+        handler.removeCallbacks(tick)
+        val at = gesture.nextTickAt()
+        if (at >= 0) handler.postAtTime(tick, at)
+    }
+
+    private fun dispatch(events: List<TriggerGesture.Event>) {
+        val app = application as? PartsApplication ?: return
+        if (!app.isReady) return
+        val p = app.parts.prefs
+        for (e in events) {
+            val upper = e.key == TriggerAction.KEY_UPPER
+            when (e.type) {
+                TriggerGesture.COMBO -> TriggerActions.run(this, p.triggerCombo, p.triggerApp(SLOT_COMBO))
+                TriggerGesture.TAP -> {
+                    val action = if (upper) p.triggerUpper else p.triggerLower
+                    if (action == TriggerAction.VOLUME) TriggerActions.volume(this, true)
+                    else TriggerActions.run(this, action, p.triggerApp(if (upper) SLOT_UPPER else SLOT_LOWER))
+                }
+                TriggerGesture.HOLD -> {
+                    val action = if (upper) p.triggerUpper else p.triggerLower
+                    if (action == TriggerAction.VOLUME) TriggerActions.volume(this, false)
+                }
+            }
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
@@ -68,6 +117,9 @@ class IngresAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "IngresParts"
+        const val SLOT_UPPER = "upper"
+        const val SLOT_LOWER = "lower"
+        const val SLOT_COMBO = "combo"
 
         @Volatile
         var instance: IngresAccessibilityService? = null

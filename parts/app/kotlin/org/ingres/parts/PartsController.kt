@@ -142,7 +142,10 @@ class PartsController(private val ctx: Context) {
 
     /** Ada aksi tombol bahu di luar game. */
     val triggersOutsideGame: Boolean
-        get() = prefs.triggerUpper != TriggerAction.NONE || prefs.triggerLower != TriggerAction.NONE
+        get() =
+            prefs.triggerUpper != TriggerAction.NONE ||
+                prefs.triggerLower != TriggerAction.NONE ||
+                prefs.triggerCombo != TriggerAction.NONE
 
     /** Layanan aksesibilitas hanya menyala bila tombol bahu di luar game atau Game Toolbox dipakai. */
     private fun applyAccessibility() {

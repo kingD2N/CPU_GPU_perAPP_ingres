@@ -95,7 +95,22 @@ class PartsActivity : ComponentActivity() {
 private fun PartsNav(controller: PartsController, speaker: SpeakerCleaner) {
     var screen by rememberSaveable { mutableStateOf(SCREEN_MAIN) }
     var games by remember { mutableStateOf(controller.prefs.games) }
+    var appSlot by rememberSaveable { mutableStateOf("upper") }
     when (screen) {
+        SCREEN_APP -> {
+            BackHandler { screen = SCREEN_MAIN }
+            val current = controller.prefs.triggerApp(appSlot)
+            GamePickerScreen(
+                selected = if (current.isEmpty()) emptySet() else setOf(current),
+                onToggle = { pkg, _ ->
+                    controller.prefs.setTriggerApp(appSlot, pkg)
+                    screen = SCREEN_MAIN
+                },
+                onBack = { screen = SCREEN_MAIN },
+                title = R.string.trigger_app_pick,
+                single = true,
+            )
+        }
         SCREEN_GAMES -> {
             BackHandler { screen = SCREEN_MAIN }
             GamePickerScreen(
@@ -120,6 +135,10 @@ private fun PartsNav(controller: PartsController, speaker: SpeakerCleaner) {
                 games.size,
                 onOpenPicker = { screen = SCREEN_GAMES },
                 onOpenHistory = { screen = SCREEN_HISTORY },
+                onPickApp = {
+                    appSlot = it
+                    screen = SCREEN_APP
+                },
             )
     }
 }
@@ -127,6 +146,7 @@ private fun PartsNav(controller: PartsController, speaker: SpeakerCleaner) {
 private const val SCREEN_MAIN = "main"
 private const val SCREEN_GAMES = "games"
 private const val SCREEN_HISTORY = "history"
+private const val SCREEN_APP = "app"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,6 +156,7 @@ private fun MainScreen(
     gameCount: Int,
     onOpenPicker: () -> Unit,
     onOpenHistory: () -> Unit,
+    onPickApp: (String) -> Unit,
 ) {
     val prefs = controller.prefs
     val context = LocalContext.current
@@ -347,7 +368,7 @@ private fun MainScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                         )
                     }
-                    TriggerActionRows(controller)
+                    TriggerActionRows(controller, onPickApp)
                 }
             }
 
