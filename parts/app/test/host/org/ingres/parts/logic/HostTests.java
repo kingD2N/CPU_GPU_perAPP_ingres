@@ -26,6 +26,10 @@ public class HostTests {
         cool();
         services();
         power();
+        triggers();
+        batteryLog();
+        backup();
+        colorModes();
         System.out.println("ALL PASS (" + pass + ")");
     }
 
@@ -203,5 +207,91 @@ public class HostTests {
         check(ChargeCurrent.target(true, true, 3_000_000, 2_000_000).equals("0"), "fcc: bypass menang");
         check(ChargeCurrent.target(false, false, 3_000_000, 6_000_000) == null, "fcc: tanpa charger dilepas");
         check(ChargeCurrent.target(true, false, N, N) == null, "fcc: tanpa batas dilepas");
+    }
+    private static void triggers() {
+        String T = TriggerAction.TORCH, N = TriggerAction.NONE;
+        check(TriggerAction.forKey(TriggerAction.KEY_UPPER, false, T, N).equals(T), "bahu: atas -> senter");
+        check(TriggerAction.forKey(TriggerAction.KEY_LOWER, false, T, TriggerAction.MEDIA).equals(TriggerAction.MEDIA), "bahu: bawah -> media");
+        check(TriggerAction.forKey(TriggerAction.KEY_UPPER, true, T, T).equals(N), "bahu: di game diserahkan ke GameKeys");
+        check(TriggerAction.forKey(25, false, T, T).equals(N), "bahu: tombol lain (volume) tidak disentuh");
+        check(TriggerAction.forKey(TriggerAction.KEY_UPPER, false, "ngawur", N).equals(N) && TriggerAction.normalize(null).equals(N), "bahu: aksi tak dikenal");
+        check(TriggerAction.isTriggerKey(131) && TriggerAction.isTriggerKey(132) && !TriggerAction.isTriggerKey(133), "bahu: kode tombol");
+    }
+
+    private static BatteryLog.Sample smp(long min, int lvl, int t, int ma, boolean plug, boolean scr) {
+        return new BatteryLog.Sample(min * 60_000L, lvl, t, ma, plug, scr);
+    }
+
+    private static void batteryLog() {
+        BatteryLog.Sample a = smp(1, 50, 365, -300, false, true);
+        check(BatteryLog.Sample.decode(a.encode()).encode().equals(a.encode()), "riwayat: simpan/baca baris");
+        check(BatteryLog.Sample.decode("1,2,3") == null && BatteryLog.Sample.decode("x,1,1,1,1,1") == null && BatteryLog.Sample.decode(null) == null, "riwayat: baris rusak");
+        java.util.List<BatteryLog.Sample> l = new java.util.ArrayList<>();
+        l.add(smp(0, 40, 330, -200, false, true));
+        l.add(smp(1, 40, 340, 4000, true, true));
+        l.add(smp(20, 70, 420, 5000, true, false));
+        l.add(smp(40, 90, 400, 1500, true, false));
+        l.add(smp(41, 90, 390, -100, false, false));
+        l.add(smp(100, 85, 330, 4000, true, true));   // sesi 1 menit: dibuang
+        l.add(smp(101, 86, 330, 4000, true, true));
+        l.add(smp(102, 86, 330, -100, false, true));
+        java.util.List<BatteryLog.Session> ss = BatteryLog.sessions(l);
+        check(ss.size() == 1, "riwayat: satu sesi (sesi pendek dibuang)");
+        BatteryLog.Session s0 = ss.get(0);
+        check(s0.levelStart == 40 && s0.levelEnd == 90 && s0.maxTemp10 == 420 && s0.maxCurrentMa == 5000, "riwayat: isi sesi");
+        check(s0.durationMs() == 39 * 60_000L, "riwayat: durasi sesi");
+        // Jeda panjang memutus sesi.
+        java.util.List<BatteryLog.Sample> g = new java.util.ArrayList<>();
+        g.add(smp(0, 10, 300, 3000, true, true));
+        g.add(smp(10, 30, 300, 3000, true, true));
+        g.add(smp(500, 60, 300, 3000, true, true));
+        g.add(smp(510, 80, 300, 3000, true, true));
+        check(BatteryLog.sessions(g).size() == 2 && BatteryLog.sessions(g).get(0).levelStart == 60, "riwayat: jeda memutus sesi, terbaru di depan");
+        // Pemakaian layar mati: 4% dalam 2 jam = 2%/jam.
+        java.util.List<BatteryLog.Sample> d = new java.util.ArrayList<>();
+        d.add(smp(0, 80, 300, -50, false, false));
+        d.add(smp(60, 78, 300, -50, false, false));
+        d.add(smp(120, 76, 300, -50, false, false));
+        d.add(smp(130, 70, 300, -900, false, true));  // layar nyala: tidak dihitung
+        check(Math.abs(BatteryLog.idleDrainPerHour(d) - 2.0) < 1e-9, "riwayat: pemakaian layar mati");
+        java.util.List<BatteryLog.Sample> few = new java.util.ArrayList<>();
+        few.add(smp(0, 80, 300, -50, false, false));
+        few.add(smp(10, 80, 300, -50, false, false));
+        check(Double.isNaN(BatteryLog.idleDrainPerHour(few)), "riwayat: data layar mati belum cukup");
+        long now = 10L * 24 * 60 * 60 * 1000;
+        java.util.List<BatteryLog.Sample> t = new java.util.ArrayList<>();
+        t.add(new BatteryLog.Sample(now - BatteryLog.KEEP_MS - 1, 1, 1, 1, false, false));
+        t.add(new BatteryLog.Sample(now - 1000, 1, 1, 1, false, false));
+        check(BatteryLog.trim(t, now).size() == 1, "riwayat: buang sampel lama");
+    }
+
+    private static void backup() {
+        java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("cool_charge", true);
+        m.put("cool_charge_temp", 42);
+        m.put("games", "com.a.b,com.c.d");
+        m.put("note", "baris1\nbaris2 \\ akhir".replace("\\n", "\n"));
+        String txt = BackupCodec.encode(m);
+        check(txt.startsWith(BackupCodec.HEADER), "cadangan: kepala file");
+        java.util.Map<String, Character> allow = new java.util.HashMap<>();
+        allow.put("cool_charge", 'b');
+        allow.put("cool_charge_temp", 'i');
+        allow.put("games", 's');
+        allow.put("note", 's');
+        java.util.Map<String, Object> back = BackupCodec.decode(txt, allow);
+        check(back.equals(m), "cadangan: simpan lalu pulihkan sama");
+        allow.remove("note");
+        check(!BackupCodec.decode(txt, allow).containsKey("note"), "cadangan: kunci tak dikenal diabaikan");
+        allow.put("cool_charge", 'i');
+        check(!BackupCodec.decode(txt, allow).containsKey("cool_charge"), "cadangan: tipe salah diabaikan");
+        check(BackupCodec.decode("bukan cadangan", allow) == null, "cadangan: file lain ditolak");
+        check(BackupCodec.decode(BackupCodec.HEADER + "\r\ni:cool_charge_temp=40\r\ni:x=\n".replace("\\r","\r"), allow) != null, "cadangan: baris CRLF");
+    }
+
+    private static void colorModes() {
+        java.util.List<ColorModes.Mode> m = ColorModes.available(new int[] {258, 256, 257, 269}, new String[] {"Vivid", "Saturated", "Standard", "Original"}, new int[] {256, 258, 269});
+        check(m.size() == 3 && m.get(0).label.equals("Vivid") && m.get(2).value == 269, "warna: hanya mode yang tersedia");
+        check("Saturated".equals(ColorModes.labelOf(m, 256)) && ColorModes.labelOf(m, 999) == null, "warna: label");
+        check(ColorModes.available(null, null, null).isEmpty(), "warna: tanpa data");
     }
 }

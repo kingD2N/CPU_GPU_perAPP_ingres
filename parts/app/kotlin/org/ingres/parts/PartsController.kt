@@ -9,8 +9,10 @@ import android.content.Context
 import android.util.Log
 import org.ingres.parts.logic.ChargeCurrent
 import org.ingres.parts.logic.ChargePolicy
+import org.ingres.parts.logic.ColorModes
 import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.ThermalProfile
+import org.ingres.parts.logic.TriggerAction
 
 /**
  * Otak Ingres Parts. Semua method dipanggil di thread utama.
@@ -24,6 +26,14 @@ class PartsController(private val ctx: Context) {
     private val overlay = FpsOverlay(ctx)
     /** Info baterai untuk halaman Ingres Parts (dibaca di luar thread utama). */
     val battery = BatteryReader(ctx, prefs)
+    /** Riwayat baterai (dibaca halaman Riwayat dan laporan bug). */
+    val history = BatteryHistory(ctx, prefs, battery)
+    private val overrides = GameOverrides(ctx, prefs)
+    private val toolbox = GameToolbox(ctx, this)
+
+    /** Paket di layar depan terakhir (untuk Bersihkan RAM). */
+    var topPackage: String? = null
+        private set
 
     // Masukan
     var batteryLevel = -1
@@ -75,6 +85,7 @@ class PartsController(private val ctx: Context) {
     /** @param tempC suhu baterai (derajat C), NaN bila tidak ada */
     fun onBattery(level: Int, isPlugged: Boolean, tempC: Float) {
         battery.learnIfNeeded(isPlugged)
+        history.onBattery(level, isPlugged, tempC)
         val sameTemp = tempC == batteryTemp || (tempC.isNaN() && batteryTemp.isNaN())
         if (level == batteryLevel && isPlugged == plugged && sameTemp) return
         batteryLevel = level
@@ -84,14 +95,17 @@ class PartsController(private val ctx: Context) {
     }
 
     fun onForeground(pkg: String) {
+        topPackage = pkg
         setGameActive(pkg in prefs.games)
     }
 
     fun onScreenOff() {
+        history.onScreen(false)
         setGameActive(false)
     }
 
     fun onScreenOn() {
+        history.onScreen(true)
         // Panel bisa melupakan mode Flat saat layar mati; tulis ulang.
         if (prefs.flatMode) pushFlat("1")
     }
@@ -111,6 +125,29 @@ class PartsController(private val ctx: Context) {
         applyOverlay()
         applyFlat()
         applyGameKeys()
+        applyGameExtras()
+        applyAccessibility()
+    }
+
+    /**
+     * Selama game: notifikasi pop-up, kunci kecerahan, mode warna, dan Game Toolbox. Di luar game
+     * (juga saat app baru mulai) semua dikembalikan ke nilai aslinya.
+     */
+    private fun applyGameExtras() {
+        overrides.headsUp(gameActive && prefs.gameHideHeadsUp)
+        overrides.brightness(gameActive && prefs.gameLockBrightness)
+        overrides.colorMode(if (gameActive) prefs.gameColorMode else ColorModes.FOLLOW)
+        if (gameActive && prefs.toolboxEnabled) toolbox.show() else toolbox.hide()
+    }
+
+    /** Ada aksi tombol bahu di luar game. */
+    val triggersOutsideGame: Boolean
+        get() = prefs.triggerUpper != TriggerAction.NONE || prefs.triggerLower != TriggerAction.NONE
+
+    /** Layanan aksesibilitas hanya menyala bila tombol bahu di luar game atau Game Toolbox dipakai. */
+    private fun applyAccessibility() {
+        IngresAccessibilityService.update(ctx, prefs.toolboxEnabled || triggersOutsideGame)
+        IngresAccessibilityService.instance?.setKeyFilter(triggersOutsideGame)
     }
 
     private fun applyCharge() {

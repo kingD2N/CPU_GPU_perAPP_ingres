@@ -21,6 +21,17 @@
     <!-- Tombol bahu: layanan aksesibilitas GameKeys dan menghentikan prosesnya. -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES" />
+    <!-- Mode game: notifikasi pop-up, kecerahan, mode warna; bersihkan RAM. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.CONTROL_DISPLAY_BRIGHTNESS" />
+    <uses-permission android:name="android.permission.CONTROL_DISPLAY_COLOR_TRANSFORMS" />
+    <uses-permission android:name="android.permission.REAL_GET_TASKS" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <!-- Tombol bahu di luar game: buka kamera dari latar belakang, getar. -->
+    <uses-permission android:name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Laporan bug: logcat. -->
+    <uses-permission android:name="android.permission.READ_LOGS" />
 
     <application
         android:name=".PartsApplication"
@@ -57,6 +68,20 @@
                 android:name="com.android.settings.order"
                 android:value="-1" />
         </activity>
+
+        <!-- Tombol bahu di luar game dan screenshot Game Toolbox. Dinyalakan otomatis bila dipakai. -->
+        <service
+            android:name=".IngresAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/ingres_accessibility" />
+        </service>
 
         <receiver
             android:name=".BootCompletedReceiver"

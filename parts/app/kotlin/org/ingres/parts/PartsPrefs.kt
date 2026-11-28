@@ -8,6 +8,8 @@ package org.ingres.parts
 import android.content.Context
 import android.content.SharedPreferences
 import org.ingres.parts.logic.ChargeCurrent
+import org.ingres.parts.logic.ColorModes
+import org.ingres.parts.logic.TriggerAction
 import org.ingres.parts.logic.ChargePolicy
 import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.GameList
@@ -107,6 +109,79 @@ class PartsPrefs(context: Context) {
             prefs.edit().putInt(K_FCC_RESTORE, v).commit()
         }
 
+    /** Aksi tombol bahu atas/bawah di luar game (TriggerAction.*). */
+    var triggerUpper: String
+        get() = TriggerAction.normalize(prefs.getString(K_TRIGGER_UPPER, TriggerAction.NONE))
+        set(v) = prefs.edit().putString(K_TRIGGER_UPPER, TriggerAction.normalize(v)).apply()
+
+    var triggerLower: String
+        get() = TriggerAction.normalize(prefs.getString(K_TRIGGER_LOWER, TriggerAction.NONE))
+        set(v) = prefs.edit().putString(K_TRIGGER_LOWER, TriggerAction.normalize(v)).apply()
+
+    /** Game Toolbox: tab di tepi layar saat game dibuka. */
+    var toolboxEnabled: Boolean
+        get() = prefs.getBoolean(K_TOOLBOX, false)
+        set(v) = prefs.edit().putBoolean(K_TOOLBOX, v).apply()
+
+    var gameHideHeadsUp: Boolean
+        get() = prefs.getBoolean(K_GAME_HEADSUP, false)
+        set(v) = prefs.edit().putBoolean(K_GAME_HEADSUP, v).apply()
+
+    var gameLockBrightness: Boolean
+        get() = prefs.getBoolean(K_GAME_BRIGHTNESS, false)
+        set(v) = prefs.edit().putBoolean(K_GAME_BRIGHTNESS, v).apply()
+
+    /** Mode warna layar saat game, atau ColorModes.FOLLOW. */
+    var gameColorMode: Int
+        get() = prefs.getInt(K_GAME_COLOR, ColorModes.FOLLOW)
+        set(v) = prefs.edit().putInt(K_GAME_COLOR, v).apply()
+
+    /** Catat riwayat baterai. */
+    var historyEnabled: Boolean
+        get() = prefs.getBoolean(K_HISTORY, true)
+        set(v) = prefs.edit().putBoolean(K_HISTORY, v).apply()
+
+    // Nilai asli yang sedang diganti selama game (dikembalikan saat keluar game atau app mulai lagi).
+    var origHeadsUp: Int
+        get() = prefs.getInt(K_ORIG_HEADSUP, -1)
+        set(v) {
+            prefs.edit().putInt(K_ORIG_HEADSUP, v).commit()
+        }
+
+    var brightnessLocked: Boolean
+        get() = prefs.getBoolean(K_ORIG_BRIGHTNESS, false)
+        set(v) {
+            prefs.edit().putBoolean(K_ORIG_BRIGHTNESS, v).commit()
+        }
+
+    var origColorMode: Int
+        get() = prefs.getInt(K_ORIG_COLOR, ColorModes.FOLLOW)
+        set(v) {
+            prefs.edit().putInt(K_ORIG_COLOR, v).commit()
+        }
+
+    /** Setelan pengguna untuk file cadangan (tanpa status internal). */
+    fun exportable(): Map<String, Any> {
+        val out = LinkedHashMap<String, Any>()
+        for ((k, v) in prefs.all) {
+            if (k in BACKUP_TYPES && v != null) out[k] = v
+        }
+        return out
+    }
+
+    /** Pulihkan dari file cadangan; nilai dirapikan lagi saat dibaca lewat properti di atas. */
+    fun import(values: Map<String, Any>) {
+        val e = prefs.edit()
+        for ((k, v) in values) {
+            when (v) {
+                is Boolean -> e.putBoolean(k, v)
+                is Int -> e.putInt(k, v)
+                is String -> e.putString(k, v)
+            }
+        }
+        e.commit()
+    }
+
     /**
      * Tanda current_now saat baterai terpakai (-1 atau 1), 0 = belum diketahui. Dipelajari saat
      * charger tercabut, karena kernel tidak selalu memakai konvensi Android.
@@ -115,7 +190,36 @@ class PartsPrefs(context: Context) {
         get() = prefs.getInt(K_DISCHARGE_SIGN, 0).coerceIn(-1, 1)
         set(v) = prefs.edit().putInt(K_DISCHARGE_SIGN, v.coerceIn(-1, 1)).apply()
 
-    private companion object {
+    companion object {
+        /** Kunci yang ikut dicadangkan dan tipenya. */
+        val BACKUP_TYPES: Map<String, Char> =
+            mapOf(
+                "charge_mode" to 's',
+                "charge_limit" to 'i',
+                "bypass_enabled" to 'b',
+                "bypass_game_only" to 'b',
+                "cool_charge" to 'b',
+                "cool_charge_temp" to 'i',
+                "power_limit" to 'b',
+                "power_limit_watts" to 'i',
+                "thermal_base" to 's',
+                "thermal_game" to 's',
+                "games" to 's',
+                "game_touch" to 'b',
+                "game_overlay" to 'b',
+                "touch_always" to 'b',
+                "flat_mode" to 'b',
+                "gamekeys_enabled" to 'b',
+                "trigger_upper" to 's',
+                "trigger_lower" to 's',
+                "toolbox" to 'b',
+                "game_headsup" to 'b',
+                "game_brightness" to 'b',
+                "game_color_mode" to 'i',
+                "history" to 'b',
+            )
+
+
         const val K_CHARGE_MODE = "charge_mode"
         const val K_CHARGE_LIMIT = "charge_limit"
         const val K_BYPASS = "bypass_enabled"
@@ -134,5 +238,15 @@ class PartsPrefs(context: Context) {
         const val K_GAMEKEYS = "gamekeys_enabled"
         const val K_FCC_RESTORE = "fcc_restore"
         const val K_DISCHARGE_SIGN = "discharge_sign"
+        const val K_TRIGGER_UPPER = "trigger_upper"
+        const val K_TRIGGER_LOWER = "trigger_lower"
+        const val K_TOOLBOX = "toolbox"
+        const val K_GAME_HEADSUP = "game_headsup"
+        const val K_GAME_BRIGHTNESS = "game_brightness"
+        const val K_GAME_COLOR = "game_color_mode"
+        const val K_HISTORY = "history"
+        const val K_ORIG_HEADSUP = "orig_headsup"
+        const val K_ORIG_BRIGHTNESS = "orig_brightness_locked"
+        const val K_ORIG_COLOR = "orig_color_mode"
     }
 }

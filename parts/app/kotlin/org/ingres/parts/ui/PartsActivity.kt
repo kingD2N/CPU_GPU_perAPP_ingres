@@ -93,24 +93,40 @@ class PartsActivity : ComponentActivity() {
 
 @Composable
 private fun PartsNav(controller: PartsController, speaker: SpeakerCleaner) {
-    var picker by rememberSaveable { mutableStateOf(false) }
+    var screen by rememberSaveable { mutableStateOf(SCREEN_MAIN) }
     var games by remember { mutableStateOf(controller.prefs.games) }
-    if (picker) {
-        BackHandler { picker = false }
-        GamePickerScreen(
-            selected = games,
-            onToggle = { pkg, on ->
-                val next = if (on) games + pkg else games - pkg
-                controller.prefs.games = next
-                games = controller.prefs.games
-                controller.applyAll()
-            },
-            onBack = { picker = false },
-        )
-    } else {
-        MainScreen(controller, speaker, games.size, onOpenPicker = { picker = true })
+    when (screen) {
+        SCREEN_GAMES -> {
+            BackHandler { screen = SCREEN_MAIN }
+            GamePickerScreen(
+                selected = games,
+                onToggle = { pkg, on ->
+                    val next = if (on) games + pkg else games - pkg
+                    controller.prefs.games = next
+                    games = controller.prefs.games
+                    controller.applyAll()
+                },
+                onBack = { screen = SCREEN_MAIN },
+            )
+        }
+        SCREEN_HISTORY -> {
+            BackHandler { screen = SCREEN_MAIN }
+            BatteryHistoryScreen(controller, onBack = { screen = SCREEN_MAIN })
+        }
+        else ->
+            MainScreen(
+                controller,
+                speaker,
+                games.size,
+                onOpenPicker = { screen = SCREEN_GAMES },
+                onOpenHistory = { screen = SCREEN_HISTORY },
+            )
     }
 }
+
+private const val SCREEN_MAIN = "main"
+private const val SCREEN_GAMES = "games"
+private const val SCREEN_HISTORY = "history"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,6 +135,7 @@ private fun MainScreen(
     speaker: SpeakerCleaner,
     gameCount: Int,
     onOpenPicker: () -> Unit,
+    onOpenHistory: () -> Unit,
 ) {
     val prefs = controller.prefs
     val context = LocalContext.current
@@ -271,6 +288,7 @@ private fun MainScreen(
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
+                    ClickRow(stringResource(R.string.history_title), stringResource(R.string.history_link_desc), onOpenHistory)
                 }
             }
 
@@ -312,12 +330,13 @@ private fun MainScreen(
                     ) {
                         Text(stringResource(if (preview) R.string.overlay_hide else R.string.overlay_preview))
                     }
+                    GameExtraRows(controller)
                 }
             }
 
-            if (hasGameKeys) {
-                item {
-                    Section(stringResource(R.string.section_triggers)) {
+            item {
+                Section(stringResource(R.string.section_triggers)) {
+                    if (hasGameKeys) {
                         SwitchRow(stringResource(R.string.triggers_title), stringResource(R.string.triggers_desc), gameKeys) {
                             gameKeys = it; prefs.gameKeysEnabled = it; applied()
                         }
@@ -328,11 +347,13 @@ private fun MainScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                         )
                     }
+                    TriggerActionRows(controller)
                 }
             }
 
             item {
                 Section(stringResource(R.string.section_display)) {
+                    ColorModeRow()
                     SwitchRow(stringResource(R.string.flat_title), stringResource(R.string.flat_desc), flat) {
                         flat = it; prefs.flatMode = it; applied()
                     }
@@ -358,6 +379,8 @@ private fun MainScreen(
                     }
                 }
             }
+
+            item { BackupReportSection(controller) }
 
             item {
                 Section(stringResource(R.string.section_more)) {
@@ -460,7 +483,7 @@ private fun BatteryInfoRows(info: BatteryReader.Snapshot) {
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+internal fun InfoRow(label: String, value: String) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -500,7 +523,7 @@ private fun thermalDesc(p: ThermalProfile): String =
     )
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
+internal fun Section(title: String, content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -518,7 +541,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun RadioRow(title: String, desc: String?, selected: Boolean, onClick: () -> Unit) {
+internal fun RadioRow(title: String, desc: String?, selected: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth()
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
@@ -532,7 +555,7 @@ private fun RadioRow(title: String, desc: String?, selected: Boolean, onClick: (
 }
 
 @Composable
-private fun SwitchRow(title: String, desc: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun SwitchRow(title: String, desc: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         Modifier.fillMaxWidth()
             .toggleable(value = checked, onValueChange = onChange, role = Role.Switch)
@@ -546,14 +569,14 @@ private fun SwitchRow(title: String, desc: String?, checked: Boolean, onChange: 
 }
 
 @Composable
-private fun ClickRow(title: String, desc: String?, onClick: () -> Unit) {
+internal fun ClickRow(title: String, desc: String?, onClick: () -> Unit) {
     Box(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp)) {
         TitleDesc(title, desc, Modifier)
     }
 }
 
 @Composable
-private fun TitleDesc(title: String, desc: String?, modifier: Modifier) {
+internal fun TitleDesc(title: String, desc: String?, modifier: Modifier) {
     Column(modifier) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
         if (desc != null) {

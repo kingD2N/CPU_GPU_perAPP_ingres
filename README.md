@@ -22,6 +22,13 @@ Dibuat oleh [kingD2N](https://github.com/kingD2N). Diuji di Evolution X (Android
 | Mode game: daftar game, thermal khusus game, sentuhan 480 Hz, overlay FPS & suhu | `touch_dev/bump_sample_rate`, `sde-crtc-0/measured_fps` | aktif saat game di daftar terbuka di layar depan |
 | Sentuhan 480 Hz di semua aplikasi | `touch_dev/bump_sample_rate` | pengganti "High touch polling rate" di Setelan |
 | Tombol bahu (GameKeys) | `sys.ingres.parts.gamekeys` → `stop`/`start gamekeyd` | tampil bila GameKeys terpasang; dimatikan = layanan aksesibilitas GameKeys dimatikan dan prosesnya dihentikan dulu, lalu gamekeyd dihentikan (sentuhan tidak lagi lewat gamekeyd); cara pakai di halaman |
+| Game Toolbox | overlay (tab tepi kanan) | saat game di daftar terbuka: notifikasi pop-up, kunci kecerahan, overlay FPS, sentuhan 480 Hz, profil thermal, bersihkan RAM, screenshot |
+| Mode game: sembunyikan notifikasi pop-up, kunci kecerahan, mode warna saat game | `heads_up_notifications_enabled`, `screen_brightness_mode`, `ColorDisplayManager` | nilai asli disimpan dan dikembalikan saat keluar game (juga bila app sempat mati) |
+| Tombol bahu di luar game | `xm_gamekey` → `KEYCODE_F1`/`F2` lewat layanan aksesibilitas | senter, kamera, screenshot, putar/jeda, bunyi/getar, kunci layar; di dalam game tombol tetap milik GameKeys; layanan aksesibilitas hanya menyala bila dipakai |
+| Mode warna | mode QDCM (Setelan > Tampilan > Warna) | sama dengan Setelan, ditambah mode khusus saat main game |
+| Riwayat baterai | file di penyimpanan app (7 hari) | sesi cas (persen, durasi, suhu & arus maks), grafik 24 jam, pemakaian saat layar mati |
+| Cadangan setelan | file teks pilihan pengguna | cadangkan/pulihkan setelan Ingres Parts (mis. sebelum clean flash) |
+| Laporkan bug | `Download/IngresParts/*.zip` | info ROM, setelan, baterai, getprop, logcat (izin READ_LOGS) |
 | Mode warna Flat | `disp-DSI-0/disp_param` = `6 1` | ditulis ulang saat layar menyala (panel ingres tidak mendukung DC dimming) |
 | Pembersih speaker | speaker bawaan | nada 165 Hz 30 detik, volume dikembalikan sesudahnya |
 | CPU/GPU per Aplikasi | `cpufreq/policy0,4,7`, `kgsl-3d0/devfreq` | profil frekuensi CPU/GPU dan governor per aplikasi (lihat di bawah) |

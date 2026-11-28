@@ -126,6 +126,9 @@ class BatteryReader(private val ctx: Context, private val prefs: PartsPrefs) {
         if (sign != 0 && sign != prefs.dischargeSign) prefs.dischargeSign = sign
     }
 
+    /** Arus baterai sekarang (mA, positif = mengisi), BatteryInfo.UNKNOWN bila tidak terbaca. */
+    fun currentMa(): Int = BatteryInfo.signedMa(currentUa(), prefs.dischargeSign)
+
     /** current_now dalam uA, dari BatteryManager lalu sysfs. */
     private fun currentUa(): Int {
         val v =
