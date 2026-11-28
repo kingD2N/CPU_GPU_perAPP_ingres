@@ -52,6 +52,10 @@
     <string name="status_unplugged">not plugged in</string>
     <string name="status_cool">charging slower, battery warm</string>
     <string name="status_cool_very_hot">charging very slowly, battery hot</string>
+    <string name="status_power_limited">charging, power limited</string>
+    <string name="power_limit_title">Limit fast charging power</string>
+    <string name="power_limit_desc">Charging is capped at about %1$d W (battery current %2$d mA). Cooler and easier on the battery, but charging takes longer</string>
+    <string name="power_limit_value">Max about %1$d W (%2$d mA)</string>
     <string name="cool_title">Cool charging</string>
     <string name="cool_desc">Lowers the charging current when the battery reaches %1$d°C (lower again at %2$d°C) and goes back to normal once it cools down</string>
     <string name="cool_temp">Start at %1$d°C</string>

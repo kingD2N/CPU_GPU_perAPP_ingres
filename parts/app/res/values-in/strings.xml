@@ -51,6 +51,10 @@
     <string name="status_unplugged">tidak dicas</string>
     <string name="status_cool">mengisi pelan, baterai hangat</string>
     <string name="status_cool_very_hot">mengisi sangat pelan, baterai panas</string>
+    <string name="status_power_limited">mengisi, daya dibatasi</string>
+    <string name="power_limit_title">Batasi daya cas cepat</string>
+    <string name="power_limit_desc">Daya cas dibatasi sekitar %1$d W (arus baterai %2$d mA). Lebih dingin dan lebih awet untuk baterai, tapi cas lebih lama</string>
+    <string name="power_limit_value">Maks sekitar %1$d W (%2$d mA)</string>
     <string name="cool_title">Cas dingin</string>
     <string name="cool_desc">Arus cas diturunkan saat baterai mencapai %1$d°C (lebih pelan lagi di %2$d°C), kembali normal setelah dingin</string>
     <string name="cool_temp">Mulai di %1$d°C</string>

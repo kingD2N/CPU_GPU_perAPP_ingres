@@ -7,6 +7,7 @@ package org.ingres.parts
 
 import android.content.Context
 import android.content.SharedPreferences
+import org.ingres.parts.logic.ChargeCurrent
 import org.ingres.parts.logic.ChargePolicy
 import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.GameList
@@ -45,6 +46,15 @@ class PartsPrefs(context: Context) {
     var coolTemp: Int
         get() = CoolCharge.clampTemp(prefs.getInt(K_COOL_TEMP, CoolCharge.DEFAULT_TEMP))
         set(v) = prefs.edit().putInt(K_COOL_TEMP, CoolCharge.clampTemp(v)).apply()
+
+    /** Batas daya cas cepat (perkiraan watt charger). */
+    var powerLimitEnabled: Boolean
+        get() = prefs.getBoolean(K_POWER_LIMIT, false)
+        set(v) = prefs.edit().putBoolean(K_POWER_LIMIT, v).apply()
+
+    var powerLimitWatts: Int
+        get() = ChargeCurrent.clampWatts(prefs.getInt(K_POWER_LIMIT_W, ChargeCurrent.DEFAULT_W))
+        set(v) = prefs.edit().putInt(K_POWER_LIMIT_W, ChargeCurrent.clampWatts(v)).apply()
 
     var thermalBase: String
         get() = ThermalProfile.fromKey(prefs.getString(K_THERMAL_BASE, null)).key
@@ -112,6 +122,8 @@ class PartsPrefs(context: Context) {
         const val K_BYPASS_GAME_ONLY = "bypass_game_only"
         const val K_COOL = "cool_charge"
         const val K_COOL_TEMP = "cool_charge_temp"
+        const val K_POWER_LIMIT = "power_limit"
+        const val K_POWER_LIMIT_W = "power_limit_watts"
         const val K_THERMAL_BASE = "thermal_base"
         const val K_THERMAL_GAME = "thermal_game"
         const val K_GAMES = "games"

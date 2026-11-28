@@ -25,6 +25,7 @@ public class HostTests {
         battery();
         cool();
         services();
+        power();
         System.out.println("ALL PASS (" + pass + ")");
     }
 
@@ -190,5 +191,17 @@ public class HostTests {
         check(ServiceList.set(other + "::" + other, gk, false).equals(other), "a11y: rapikan daftar");
         check(ServiceList.contains("a/b.C:org.ingres.gamekeys/.service.AccessibilityService", gk)
                 && !ServiceList.contains(other, gk) && !ServiceList.contains(null, gk), "a11y: contains");
+    }
+    private static void power() {
+        int N = ChargeCurrent.NO_LIMIT;
+        check(ChargeCurrent.powerCapUa(true, 60) == 6_000_000 && ChargeCurrent.powerCapMa(60) == 6000, "daya: 60 W = 6000 mA");
+        check(ChargeCurrent.powerCapUa(false, 60) == N, "daya: mati = tanpa batas");
+        check(ChargeCurrent.clampWatts(5) == 20 && ChargeCurrent.clampWatts(500) == 100 && ChargeCurrent.clampWatts(64) == 60, "daya: jepit & langkah 10");
+        check(ChargeCurrent.target(true, false, N, 6_000_000).equals("6000000"), "fcc: batas daya saja");
+        check(ChargeCurrent.target(true, false, 3_000_000, 6_000_000).equals("3000000"), "fcc: cas dingin lebih ketat");
+        check(ChargeCurrent.target(true, false, 3_000_000, 2_000_000).equals("2000000"), "fcc: batas daya lebih ketat");
+        check(ChargeCurrent.target(true, true, 3_000_000, 2_000_000).equals("0"), "fcc: bypass menang");
+        check(ChargeCurrent.target(false, false, 3_000_000, 6_000_000) == null, "fcc: tanpa charger dilepas");
+        check(ChargeCurrent.target(true, false, N, N) == null, "fcc: tanpa batas dilepas");
     }
 }

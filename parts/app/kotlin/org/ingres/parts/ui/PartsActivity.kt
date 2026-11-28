@@ -69,6 +69,7 @@ import org.ingres.parts.PartsController
 import org.ingres.parts.R
 import org.ingres.parts.SpeakerCleaner
 import org.ingres.parts.logic.BatteryInfo
+import org.ingres.parts.logic.ChargeCurrent
 import org.ingres.parts.logic.ChargePolicy
 import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.ThermalProfile
@@ -128,6 +129,8 @@ private fun MainScreen(
     var bypassGameOnly by remember { mutableStateOf(prefs.bypassGameOnly) }
     var cool by remember { mutableStateOf(prefs.coolEnabled) }
     var coolTemp by remember { mutableIntStateOf(prefs.coolTemp) }
+    var powerLimit by remember { mutableStateOf(prefs.powerLimitEnabled) }
+    var powerWatts by remember { mutableIntStateOf(prefs.powerLimitWatts) }
     var thermalBase by remember { mutableStateOf(prefs.thermalBase) }
     var thermalGame by remember { mutableStateOf(prefs.thermalGame) }
     var touch by remember { mutableStateOf(prefs.gameTouch) }
@@ -223,6 +226,28 @@ private fun MainScreen(
                         SwitchRow(stringResource(R.string.bypass_game_only), null, bypassGameOnly) {
                             bypassGameOnly = it; prefs.bypassGameOnly = it; applied()
                         }
+                    }
+                    SwitchRow(
+                        stringResource(R.string.power_limit_title),
+                        stringResource(R.string.power_limit_desc, powerWatts, ChargeCurrent.powerCapMa(powerWatts)),
+                        powerLimit,
+                    ) {
+                        powerLimit = it; prefs.powerLimitEnabled = it; applied()
+                    }
+                    if (powerLimit) {
+                        Text(
+                            stringResource(R.string.power_limit_value, powerWatts, ChargeCurrent.powerCapMa(powerWatts)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                        Slider(
+                            value = powerWatts.toFloat(),
+                            onValueChange = { powerWatts = ChargeCurrent.clampWatts(Math.round(it)) },
+                            onValueChangeFinished = { prefs.powerLimitWatts = powerWatts; applied() },
+                            valueRange = ChargeCurrent.MIN_W.toFloat()..ChargeCurrent.MAX_W.toFloat(),
+                            steps = (ChargeCurrent.MAX_W - ChargeCurrent.MIN_W) / ChargeCurrent.STEP_W - 1,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
                     }
                     SwitchRow(
                         stringResource(R.string.cool_title),
@@ -366,6 +391,7 @@ private fun BatteryStatus(controller: PartsController, @Suppress("UNUSED_PARAMET
             c.suspendInput -> R.string.status_held
             controller.plugged && controller.coolLevel == CoolCharge.VERY_HOT -> R.string.status_cool_very_hot
             controller.plugged && controller.coolLevel == CoolCharge.HOT -> R.string.status_cool
+            controller.plugged && controller.prefs.powerLimitEnabled -> R.string.status_power_limited
             controller.plugged -> R.string.status_charging
             else -> R.string.status_unplugged
         }

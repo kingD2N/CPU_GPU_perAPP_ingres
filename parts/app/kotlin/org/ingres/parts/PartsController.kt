@@ -7,6 +7,7 @@ package org.ingres.parts
 
 import android.content.Context
 import android.util.Log
+import org.ingres.parts.logic.ChargeCurrent
 import org.ingres.parts.logic.ChargePolicy
 import org.ingres.parts.logic.CoolCharge
 import org.ingres.parts.logic.ThermalProfile
@@ -126,20 +127,21 @@ class PartsController(private val ctx: Context) {
         charge = next
         coolLevel = CoolCharge.decide(prefs.coolEnabled, plugged, batteryTemp, prefs.coolTemp, coolLevel)
         write(SysNodes.PROP_NIGHT_CHARGING, if (next.nightCharging) "1" else "0")
-        // Bypass (FCC 0) menang atas cas dingin.
+        // Bypass (FCC 0) menang; selain itu batas paling ketat dari cas dingin dan batas daya.
         val fcc =
-            when {
-                next.bypass -> "0"
-                coolLevel != CoolCharge.NORMAL -> CoolCharge.fccUa(coolLevel).toString()
-                else -> null
-            }
+            ChargeCurrent.target(
+                plugged,
+                next.bypass,
+                CoolCharge.fccUa(coolLevel),
+                ChargeCurrent.powerCapUa(prefs.powerLimitEnabled, prefs.powerLimitWatts),
+            )
         applyFcc(fcc)
         write(SysNodes.PROP_INPUT_SUSPEND, if (next.suspendInput) "1" else "0")
     }
 
     /**
-     * Batas arus cas baterai (FCC): "0" = bypass (HP berjalan dari charger), angka uA = cas dingin,
-     * null = tanpa batas. ingres memakai qti_battery_charger yang meneruskan nilai ke ADSP sebagai
+     * Batas arus cas baterai (FCC): "0" = bypass (HP berjalan dari charger), angka uA = cas dingin
+     * atau batas daya, null = tanpa batas. ingres memakai qti_battery_charger yang meneruskan nilai ke ADSP sebagai
      * batas tetap, jadi saat selesai FCC TIDAK diisi angka (itu membatasi cas berikutnya),
      * melainkan dilepas dengan nilai negatif (UINT_MAX di ADSP).
      */
